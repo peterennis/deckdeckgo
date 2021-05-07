@@ -1,4 +1,7 @@
 import {initEmbedded} from '../embed/embedded';
+import { initSize } from "../size/size";
+import { isScreenshot } from "../utils/utils.deck";
+import { initMouse } from "../mouse/mouse";
 
 export const postLoading = async () => {
   const app = document.querySelector('ion-app');
@@ -9,6 +12,8 @@ export const postLoading = async () => {
 
   await initSreenshot();
   await initEmbedMode();
+  await initSize();
+  await initMouse();
 };
 
 async function initSreenshot() {
@@ -16,14 +21,11 @@ async function initSreenshot() {
     return;
   }
 
-  const url = new URL(window.location.href);
-  const screenshot = url && url.searchParams ? url.searchParams.has('screenshot') : false;
+  if (isScreenshot()) {
+    const menu: HTMLElement | null = document.querySelector('#fullscreen-menu');
 
-  if (screenshot) {
-    const navigation: HTMLElement | null = document.querySelector('#navigation');
-
-    if (navigation) {
-      navigation.style.display = 'none';
+    if (menu) {
+      menu.style.display = 'none';
     }
 
     const previous: HTMLElement | null = document.querySelector('#previous');

@@ -2,11 +2,12 @@ import {Component, Event, EventEmitter, h, Prop, Host, State} from '@stencil/cor
 import {loadingController, modalController, OverlayEventDetail} from '@ionic/core';
 
 import store from '../../../stores/error.store';
+import i18n from '../../../stores/i18n.store';
 
 import {Deck} from '../../../models/data/deck';
 
 import {DeckService} from '../../../services/data/deck/deck.service';
-import {DeckDashboardCloneResult, DeckDashboardService} from '../../../services/dashboard/deck/deck-dashboard.service';
+import {DeckDashboardCloneResult, DeckDashboardService} from '../../../services/deck/deck-dashboard.service';
 
 @Component({
   tag: 'app-dashboard-deck-actions',
@@ -146,16 +147,19 @@ export class AppDashboardDeckActions {
 
     return (
       <Host>
-        <a onClick={($event: UIEvent) => this.cloneDeck($event)} title="Clone presentation" class={this.actionInProgress || disabled ? 'disabled' : undefined}>
+        <button
+          onClick={($event: UIEvent) => this.cloneDeck($event)}
+          title={i18n.state.dashboard.copy}
+          class={this.actionInProgress || disabled ? 'disabled' : undefined}>
           <ion-icon name="copy"></ion-icon>
-        </a>
+        </button>
 
-        <a
+        <button
           onClick={($event: UIEvent) => this.presentConfirmDelete($event)}
-          title="Delete presentation"
+          title={i18n.state.dashboard.delete}
           class={this.actionInProgress || disabled ? 'disabled' : undefined}>
           <ion-icon name="trash"></ion-icon>
-        </a>
+        </button>
       </Host>
     );
   }

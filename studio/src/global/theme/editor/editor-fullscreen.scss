@@ -54,6 +54,9 @@
               content: none;
             }
           }
+
+          cursor: none;
+          --deckgo-editable-cursor: none;
         }
 
         app-slide-warning {
@@ -82,5 +85,17 @@
 
   app-editor-toolbar {
     --editor-toolbar-padding: 32px;
+  }
+
+  ion-content div.grid {
+    display: block;
+
+    > app-breadcrumbs {
+      display: none;
+    }
+
+    app-actions-editor {
+      position: inherit;
+    }
   }
 }

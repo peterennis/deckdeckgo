@@ -1,3 +1,79 @@
+# 4.5.0 (2020-04-03)
+
+### Features
+
+- figma integration ([#246](https://github.com/deckgo/deckdeckgo/issues/246))
+- german translations ([#1122](https://github.com/deckgo/deckdeckgo/issues/1122) and [#1123](https://github.com/deckgo/deckdeckgo/issues/1123))
+- accept images svg and webp ([#1113](https://github.com/deckgo/deckdeckgo/pull/1113)) 
+- csp object-src and base-uri ([#1111](https://github.com/deckgo/deckdeckgo/pull/1111))
+
+# 4.4.0 (2020-03-18)
+
+### Features
+
+- spanish translations ([#360](https://github.com/deckgo/deckdeckgo/issues/360))
+
+### Fix
+
+- unable to go offline ([#1104](https://github.com/deckgo/deckdeckgo/issues/1104))
+- notes encoding text incorrectly ([#1105](https://github.com/deckgo/deckdeckgo/issues/1105))
+
+# 4.3.0 (2020-03-12)
+
+### Features
+
+- i18n ([#370](https://github.com/deckgo/deckdeckgo/issues/370))
+- toggle slide type on the fly ([#251](https://github.com/deckgo/deckdeckgo/issues/251))
+- do not fetch code language list at runtime to improve performance ([#1083](https://github.com/deckgo/deckdeckgo/issues/1083))
+- add telegram to web-social-share options ([#1090](https://github.com/deckgo/deckdeckgo/issues/1090))
+
+### Fix
+
+- notes not persisted - listener has to be attached higher ([#1102](https://github.com/deckgo/deckdeckgo/pull/1102))
+- support swipe for templates with custom names ([#1079](https://github.com/deckgo/deckdeckgo/pull/1079))
+- custom templates names ([#1086](https://github.com/deckgo/deckdeckgo/pull/1086))
+- main deck selector to go offline ([#1088](https://github.com/deckgo/deckdeckgo/pull/1088))
+- low contrast warning ([#1094](https://github.com/deckgo/deckdeckgo/pull/1094))
+- publish action disable state ([#1095](https://github.com/deckgo/deckdeckgo/issues/1095))
+
+# 4.2.0 (2020-02-10)
+
+### Features
+
+- user and community templates ([#1031](https://github.com/deckgo/deckdeckgo/pull/1031) and [#1056](https://github.com/deckgo/deckdeckgo/pull/1056))
+- new default template with content aligned at the bottom of the slide ([#1073](https://github.com/deckgo/deckdeckgo/pull/1073))
+- edit with default tool or with CSS ([#1066](https://github.com/deckgo/deckdeckgo/pull/1066))
+- copy and paste elements style ("format painter") ([#1071](https://github.com/deckgo/deckdeckgo/pull/1071))
+- width, rotate and padding options for elements ([#1070](https://github.com/deckgo/deckdeckgo/pull/1070))
+- keep track of panel state open or close ([#1065](https://github.com/deckgo/deckdeckgo/pull/1065))
+- minimum six slides, instead of four, to appear in "discover" section ([#1068](https://github.com/deckgo/deckdeckgo/pull/1068))
+- handle assets with store ([#1065](https://github.com/deckgo/deckdeckgo/pull/1062))
+
+### Style
+
+- new design of the editor's tools ([#1069](https://github.com/deckgo/deckdeckgo/pull/1069))
+
+### Fix
+
+- preview code block update ([#1067](https://github.com/deckgo/deckdeckgo/pull/1067))
+- navigate contact ([#1055](https://github.com/deckgo/deckdeckgo/pull/1055))
+
+# 4.1.0 (2020-01-14)
+
+### Features
+
+- add option to not display the toolbar on code block
+- highlight code editing less quirky
+- do not supercharge paste action anymore
+
+### Fix
+
+- undefined reference in preview
+
+### Refactor
+
+- rename files with `.ts` instead of `.tsx`
+
 # 4.0.0 (2020-12-23)
 
 ### Features

@@ -1,3 +1,35 @@
+<a name="2.2.1"></a>
+
+# 2.2.1 (2021-03-25)
+
+### Bump
+
+- bump version to republish to npmjs
+
+<a name="2.2.0"></a>
+
+# 2.2.0 (2021-03-11)
+
+### Chore
+
+- we have renamed our `master` branch in `main` therefore kits have to be fetched with a new url
+
+<a name="2.1.1"></a>
+
+# 2.1.1 (2021-01-24)
+
+### Features
+
+- not empty default for template name
+
+<a name="2.1.0"></a>
+
+# 2.1.0 (2021-01-24)
+
+### Features
+
+- support for `template` creation
+
 <a name="2.0.0"></a>
 
 # 2.0.0 (2020-10-28)

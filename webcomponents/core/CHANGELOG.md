@@ -1,3 +1,33 @@
+# 8.1.6 (2021-04-23)
+
+### Build
+
+- update utils
+
+# 8.1.5 (2021-04-23)
+
+### Style
+
+- on cursor active `inherit` instead of `initial` behavior
+
+# 8.1.4 (2021-03-25)
+
+### Style
+
+- set a CSS font size for aspect ratio slides
+
+# 8.1.3 (2021-02-17)
+
+### Fix
+
+- support swipe for templates with custom names
+
+# 8.1.2 (2021-01-30)
+
+### Fix
+
+- slide might not be yet defined
+
 # 8.1.1 (2020-11-14)
 
 ### Fix

@@ -22,6 +22,7 @@ import '@deckdeckgo/drag-resize-rotate';
 import '@deckdeckgo/demo';
 import '@deckdeckgo/word-cloud';
 import '@deckdeckgo/markdown';
+import '@deckdeckgo/laser-pointer';
 
 import '@deckdeckgo/slide-title';
 import '@deckdeckgo/slide-content';
@@ -33,8 +34,9 @@ import '@deckdeckgo/slide-qrcode';
 import '@deckdeckgo/slide-chart';
 import '@deckdeckgo/slide-poll';
 import '@deckdeckgo/slide-aspect-ratio';
+import '@deckdeckgo/slide-playground';
 
-import {setupConfig as setupDeckGoConfig} from '../app/services/core/environment/environment-config';
+import {setupConfig as setupDeckGoConfig} from '../app/types/core/environment-config';
 
 setupDeckGoConfig({
   deckdeckgo: {

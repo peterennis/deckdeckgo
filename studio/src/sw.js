@@ -13,8 +13,8 @@ self.addEventListener('message', (event) => {
 
 workbox.setConfig({debug: false});
 
-const { CacheableResponsePlugin } = workbox.cacheableResponse;
-const { ExpirationPlugin } = workbox.expiration;
+const {CacheableResponsePlugin} = workbox.cacheableResponse;
+const {ExpirationPlugin} = workbox.expiration;
 
 /**
  * Cache font as displayed in the Workbox common recipe
@@ -41,20 +41,6 @@ workbox.routing.registerRoute(
       new ExpirationPlugin({
         maxAgeSeconds: 60 * 60 * 24 * 365,
         maxEntries: 30,
-      }),
-    ],
-  })
-);
-
-// Catch assets list
-workbox.routing.registerRoute(
-  /^(?=.*assets\.json).*/,
-  new workbox.strategies.CacheFirst({
-    cacheName: 'assets',
-    plugins: [
-      new ExpirationPlugin({
-        maxAgeSeconds: 30 * 24 * 60 * 60,
-        maxEntries: 60,
       }),
     ],
   })
@@ -106,7 +92,7 @@ workbox.routing.registerRoute(
 
 // Cache unpkg notably for language definitions
 workbox.routing.registerRoute(
-  /^(?=.*unpkg\.com).*/,
+  /^(?=.*(unpkg\.com|cdnjs\.cloudflare\.com|cdn\.jsdelivr\.net)).*/,
   new workbox.strategies.StaleWhileRevalidate({
     cacheName: 'unpkg',
     plugins: [

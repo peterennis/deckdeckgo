@@ -1,15 +1,12 @@
 app-element-style {
   @import "../../../../../global/theme/editor/editor-info";
   @import "../../../../../global/theme/editor/editor-popover";
+  @import "../../../../../global/theme/editor/editor-edit-mode";
 
   ion-icon.more {
     font-size: 1rem;
     padding-top: 2px;
     color: black;
-  }
-
-  ion-item.item-opacity {
-    --padding-start: 8px;
   }
 
   ion-item-divider {

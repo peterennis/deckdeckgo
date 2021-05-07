@@ -1,6 +1,6 @@
 import {Component, h, Host, Listen, State, Event, EventEmitter, Element, Prop} from '@stencil/core';
 
-import {cleanContent} from '@deckdeckgo/deck-utils';
+import {cleanContent, isSlide} from '@deckdeckgo/deck-utils';
 import {debounce, isIOS, isLandscape} from '@deckdeckgo/utils';
 
 import {SlotUtils} from '../../../../utils/editor/slot.utils';
@@ -30,7 +30,7 @@ export class AppSlidePreview {
   constructor() {
     this.debounceUpdatePreview = debounce(async () => {
       await this.updatePreview();
-    }, 500);
+    }, 750);
   }
 
   @Listen('ionKeyboardDidShow', {target: 'window'})
@@ -64,10 +64,7 @@ export class AppSlidePreview {
 
     await this.stickyIOS(selectedElement);
 
-    this.preview =
-      selectedElement?.parentElement?.nodeName?.toLowerCase().indexOf('deckgo-slide') >= 0 &&
-      SlotUtils.isNodeEditable(selectedElement) &&
-      !SlotUtils.isNodeWordCloud(selectedElement);
+    this.preview = isSlide(selectedElement?.parentElement) && SlotUtils.isNodeEditable(selectedElement) && !SlotUtils.isNodeWordCloud(selectedElement);
 
     if (this.preview) {
       await this.initDeckPreview();
@@ -99,7 +96,7 @@ export class AppSlidePreview {
   }
 
   async updateSlide(slide: HTMLElement | undefined) {
-    if (!slide) {
+    if (!slide || !this.deckPreviewRef) {
       return;
     }
 

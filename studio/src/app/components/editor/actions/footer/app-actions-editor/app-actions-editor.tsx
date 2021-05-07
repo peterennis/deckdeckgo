@@ -1,6 +1,10 @@
 import {Component, Element, Event, Watch, EventEmitter, Fragment, h, Host, JSX, Method, Prop, State, Listen} from '@stencil/core';
 
-import {BreadcrumbsStep} from '../../../../../utils/editor/breadcrumbs-type';
+import {isSlide} from '@deckdeckgo/deck-utils';
+
+import editorStore from '../../../../../stores/editor.store';
+
+import {BreadcrumbsStep} from '../../../../../types/editor/breadcrumbs-step';
 
 @Component({
   tag: 'app-actions-editor',
@@ -40,12 +44,11 @@ export class AppActionsEditor {
 
   @Event() private slideCopy: EventEmitter<HTMLElement>;
 
+  @Event() private slideTransform: EventEmitter<JSX.IntrinsicElements>;
+
   @Event() private elementFocus: EventEmitter<HTMLElement>;
 
   @Event() private presenting: EventEmitter<boolean>;
-
-  @State()
-  private step: BreadcrumbsStep = BreadcrumbsStep.DECK;
 
   @State()
   private hideBottomSheet: boolean = true;
@@ -67,7 +70,7 @@ export class AppActionsEditor {
 
     await this.actionsElementRef.touch(element, autoOpen);
 
-    this.step = element && element.tagName.toLocaleLowerCase().indexOf('deckgo-slide-') > -1 ? BreadcrumbsStep.SLIDE : BreadcrumbsStep.ELEMENT;
+    editorStore.state.step = isSlide(element) ? BreadcrumbsStep.SLIDE : BreadcrumbsStep.ELEMENT;
   }
 
   @Method()
@@ -110,19 +113,16 @@ export class AppActionsEditor {
   }
 
   private selectStepDeck() {
-    this.step = BreadcrumbsStep.DECK;
+    editorStore.state.step = BreadcrumbsStep.DECK;
   }
 
-  private async selectStep($event: CustomEvent<HTMLElement>) {
-    if (!$event) {
-      return;
-    }
-
-    if (!$event.detail || $event.detail === undefined) {
+  @Method()
+  async selectStep(element: HTMLElement | undefined) {
+    if (!element || element === undefined) {
       await this.selectDeck();
     } else {
-      await this.touch($event.detail, false);
-      $event.detail.focus();
+      await this.touch(element, false);
+      element.focus();
     }
   }
 
@@ -153,14 +153,18 @@ export class AppActionsEditor {
   }
 
   private renderFullscreen() {
-    return <app-bottom-sheet onSheetChanged={($event: CustomEvent<'open' | 'close'>) => this.sheetChanged($event)}>{this.renderActions()}</app-bottom-sheet>;
+    return (
+      <app-bottom-sheet onSheetChanged={($event: CustomEvent<'open' | 'close'>) => this.sheetChanged($event)}>
+        <app-breadcrumbs slideNumber={this.slideNumber} onStepTo={($event: CustomEvent<HTMLElement>) => this.selectStep($event?.detail)}></app-breadcrumbs>
+
+        {this.renderActions()}
+      </app-bottom-sheet>
+    );
   }
 
   private renderActions() {
     return (
       <Fragment>
-        {this.renderSelectedIndicator()}
-
         {this.renderDeckActions()}
 
         {this.renderEditActions()}
@@ -168,21 +172,10 @@ export class AppActionsEditor {
     );
   }
 
-  private renderSelectedIndicator() {
-    return (
-      <div class="indicator">
-        <app-breadcrumbs
-          step={this.step}
-          slideNumber={this.slideNumber}
-          onStepTo={($event: CustomEvent<HTMLElement>) => this.selectStep($event)}></app-breadcrumbs>
-      </div>
-    );
-  }
-
   private renderDeckActions() {
     return (
       <app-actions-deck
-        class={this.step != BreadcrumbsStep.DECK ? 'hidden' : undefined}
+        class={editorStore.state.step != BreadcrumbsStep.DECK ? 'hidden' : undefined}
         fullscreen={this.fullscreen}
         slides={this.slides}
         blockSlide={this.blockSlide}
@@ -201,8 +194,9 @@ export class AppActionsEditor {
     return (
       <app-actions-element
         ref={(el) => (this.actionsElementRef = el as HTMLAppActionsElementElement)}
-        class={this.step === BreadcrumbsStep.DECK ? 'hidden' : undefined}
+        class={editorStore.state.step === BreadcrumbsStep.DECK ? 'hidden' : undefined}
         slideCopy={this.slideCopy}
+        slideTransform={this.slideTransform}
         elementFocus={this.elementFocus}
         onResetted={() => this.selectStepDeck()}></app-actions-element>
     );

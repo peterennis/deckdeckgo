@@ -2,7 +2,11 @@ import {Component, Element, EventEmitter, Prop, State, h} from '@stencil/core';
 
 import {modalController, OverlayEventDetail} from '@ionic/core';
 
-import {PrismLanguage, PrismService} from '../../../services/editor/prism/prism.service';
+import i18n from '../../../stores/i18n.store';
+
+import {getCodeLanguage} from '../../../utils/editor/prism.utils';
+
+import {PrismLanguage} from '../../../types/editor/prism-language';
 
 @Component({
   tag: 'app-code',
@@ -23,12 +27,6 @@ export class AppCode {
   @State()
   private lineNumbers: boolean = false;
 
-  private prismService: PrismService;
-
-  constructor() {
-    this.prismService = PrismService.getInstance();
-  }
-
   async componentWillLoad() {
     await this.initCurrent();
   }
@@ -37,20 +35,16 @@ export class AppCode {
     await (this.el.closest('ion-popover') as HTMLIonPopoverElement).dismiss();
   }
 
-  private initCurrent(): Promise<void> {
-    return new Promise<void>(async (resolve) => {
-      await this.initCurrentLanguage();
+  private async initCurrent() {
+    await this.initCurrentLanguage();
 
-      this.lineNumbers = this.selectedElement && this.selectedElement.hasAttribute('line-numbers');
-
-      resolve();
-    });
+    this.lineNumbers = this.selectedElement && this.selectedElement.hasAttribute('line-numbers');
   }
 
   private async initCurrentLanguage() {
     const language: string =
       this.selectedElement && this.selectedElement.getAttribute('language') ? this.selectedElement.getAttribute('language') : 'javascript';
-    this.currentLanguage = await this.prismService.getLanguage(language);
+    this.currentLanguage = await getCodeLanguage(language);
   }
 
   private emitCodeDidChange() {
@@ -99,12 +93,12 @@ export class AppCode {
   render() {
     return [
       <ion-toolbar>
-        <h2>Code options</h2>
+        <h2>{i18n.state.editor.code_options}</h2>
         <app-close-menu slot="end" onClose={() => this.closePopover()}></app-close-menu>
       </ion-toolbar>,
       <ion-list class="article">
         <ion-item-divider>
-          <ion-label>Language</ion-label>
+          <ion-label>{i18n.state.editor.language}</ion-label>
         </ion-item-divider>
 
         <ion-item onClick={() => this.openCodeLanguage()} class="select-language">
@@ -118,7 +112,7 @@ export class AppCode {
         </ion-item>
 
         <ion-item>
-          <ion-label>Display line numbers</ion-label>
+          <ion-label>{i18n.state.editor.display_line_number}</ion-label>
           <ion-checkbox slot="end" checked={this.lineNumbers} onIonChange={($event: CustomEvent) => this.toggleLineNumbers($event)}></ion-checkbox>
         </ion-item>
       </ion-list>,

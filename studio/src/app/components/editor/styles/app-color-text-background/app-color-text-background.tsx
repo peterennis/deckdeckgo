@@ -1,6 +1,12 @@
 import {Component, Element, Event, EventEmitter, h, Prop} from '@stencil/core';
 
+import settingsStore from '../../../../stores/settings.store';
+import i18n from '../../../../stores/i18n.store';
+
 import {ColorUtils, InitStyleColor} from '../../../../utils/editor/color.utils';
+import {SettingsUtils} from '../../../../utils/core/settings.utils';
+
+import {Expanded} from '../../../../types/core/settings';
 
 @Component({
   tag: 'app-color-text-background',
@@ -19,9 +25,6 @@ export class AppColorTextBackground {
 
   @Prop()
   colorType: 'text' | 'background' = 'text';
-
-  @Prop()
-  expanded: boolean = true;
 
   @Event() colorChange: EventEmitter<void>;
 
@@ -107,8 +110,10 @@ export class AppColorTextBackground {
 
   render() {
     return (
-      <app-expansion-panel expanded={this.expanded ? 'open' : 'close'}>
-        <ion-label slot="title">Color</ion-label>
+      <app-expansion-panel
+        expanded={this.colorType === 'text' ? settingsStore.state.panels.color : settingsStore.state.panels.background}
+        onExpansion={($event: CustomEvent<Expanded>) => SettingsUtils.update(this.colorType === 'text' ? {color: $event.detail} : {background: $event.detail})}>
+        <ion-label slot="title">{i18n.state.editor.color}</ion-label>
 
         <app-color
           initColor={this.colorType === 'background' ? this.initBackground : this.initColor}

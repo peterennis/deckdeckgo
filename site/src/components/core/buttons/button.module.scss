@@ -7,6 +7,8 @@
   margin: 0.25rem 0;
   padding: 0 16px;
 
+  text-decoration: none;
+
   @media (min-width: 576px) {
     margin: 0.45rem 0;
     padding: 0 26px;
@@ -57,6 +59,17 @@
     &:hover,
     &:active {
       background: rgba(var(--color-primary-rgb), 0.88);
+    }
+  }
+
+  &[color="primary-outline"] {
+    border: 1px solid var(--color-primary);
+    color: var(--color-primary);
+
+    &:hover,
+    &:active {
+      background: rgba(var(--color-primary-rgb), 0.68);
+      color: var(--color-primary-contrast);
     }
   }
 }

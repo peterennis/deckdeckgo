@@ -1,10 +1,14 @@
 import {Component, Element, EventEmitter, h, Listen, Prop, State} from '@stencil/core';
 
-import {PrismLanguage, PrismService} from '../../../services/editor/prism/prism.service';
+import i18n from '../../../stores/i18n.store';
+
+import {filterCodeLanguages} from '../../../utils/editor/prism.utils';
+
+import {PrismLanguage} from '../../../types/editor/prism-language';
 
 @Component({
   tag: 'app-code-languages',
-  styleUrl: 'app-code-languages.scss'
+  styleUrl: 'app-code-languages.scss',
 })
 export class AppCodeLanguages {
   @Element() el: HTMLElement;
@@ -18,23 +22,14 @@ export class AppCodeLanguages {
   @Prop()
   currentLanguage: PrismLanguage | undefined;
 
-  private prismService: PrismService;
-
-  @State()
-  private languages: PrismLanguage[];
-
   @State()
   private filteredLanguages: PrismLanguage[];
 
   @State()
   private filter: string;
 
-  constructor() {
-    this.prismService = PrismService.getInstance();
-  }
-
   async componentWillLoad() {
-    await this.load();
+    await this.search();
   }
 
   componentDidLoad() {
@@ -50,43 +45,9 @@ export class AppCodeLanguages {
     await (this.el.closest('ion-modal') as HTMLIonModalElement).dismiss(selectedLanguage);
   }
 
-  private load(): Promise<void> {
-    return new Promise<void>(async (resolve) => {
-      this.languages = await this.prismService.getLanguages();
-
-      await this.search();
-
-      resolve();
-    });
-  }
-
-  private search(): Promise<void> {
-    return new Promise<void>(async (resolve) => {
-      const filtered: PrismLanguage[] | undefined = await this.filterLanguages();
-      this.filteredLanguages = [...filtered];
-
-      resolve();
-    });
-  }
-
-  private filterLanguages(): Promise<PrismLanguage[]> {
-    return new Promise<PrismLanguage[]>((resolve) => {
-      if (!this.languages || this.languages.length <= 0) {
-        resolve([]);
-        return;
-      }
-
-      if (!this.filter || this.filter === undefined || this.filter === '') {
-        resolve(this.languages);
-        return;
-      }
-
-      const results: PrismLanguage[] = this.languages.filter((language: PrismLanguage) => {
-        return language.language.toLowerCase().indexOf(this.filter.toLowerCase()) > -1;
-      });
-
-      resolve(results);
-    });
+  private async search() {
+    const filtered: PrismLanguage[] = await filterCodeLanguages(this.filter);
+    this.filteredLanguages = [...filtered];
   }
 
   private async clear() {
@@ -138,11 +99,11 @@ export class AppCodeLanguages {
       <ion-header>
         <ion-toolbar color="primary">
           <ion-buttons slot="start">
-            <ion-button onClick={() => this.closeModal()}>
-              <ion-icon aria-label="Close" src="/assets/icons/ionicons/close.svg"></ion-icon>
+            <ion-button onClick={() => this.closeModal()} aria-label={i18n.state.core.close}>
+              <ion-icon src="/assets/icons/ionicons/close.svg"></ion-icon>
             </ion-button>
           </ion-buttons>
-          <ion-title class="ion-text-uppercase">Languages</ion-title>
+          <ion-title class="ion-text-uppercase">{i18n.state.editor.languages}</ion-title>
         </ion-toolbar>
       </ion-header>,
       <ion-content class="ion-padding">
@@ -154,7 +115,7 @@ export class AppCodeLanguages {
         <ion-toolbar>
           <ion-searchbar
             debounce={500}
-            placeholder="Filter languages"
+            placeholder={i18n.state.editor.filter_languages}
             value={this.filter}
             onIonClear={() => this.clear()}
             onIonInput={(e: CustomEvent<KeyboardEvent>) => this.handleInput(e)}
@@ -162,7 +123,7 @@ export class AppCodeLanguages {
               this.search();
             }}></ion-searchbar>
         </ion-toolbar>
-      </ion-footer>
+      </ion-footer>,
     ];
   }
 

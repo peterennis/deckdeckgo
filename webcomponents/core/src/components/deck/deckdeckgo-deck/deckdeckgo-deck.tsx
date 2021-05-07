@@ -196,7 +196,7 @@ export class DeckdeckgoDeck {
         slider.style.setProperty('--slide-height', `${sliderSize.height}px`);
       }
 
-      await this.initFontSize(slider, sliderSize.height);
+      await this.initFontSize(slider, {height: sliderSize.height, width: sliderSize.width});
 
       resolve();
     });
@@ -224,18 +224,20 @@ export class DeckdeckgoDeck {
           slider.style.setProperty('--slide-height', '' + slider.offsetParent.clientHeight + 'px');
         }
 
-        await this.initFontSize(slider, slider.offsetParent.clientHeight);
+        await this.initFontSize(slider, {height: slider.offsetParent.clientHeight, width: slider.offsetParent.clientWidth});
       }
 
       resolve();
     });
   }
 
-  private async initFontSize(slider: HTMLElement, height: number) {
+  private async initFontSize(slider: HTMLElement, {height, width}: {height: number; width: number}) {
     // 576px height = font-size 16px or 1em (relative to the font-size of its direct or nearest parent)
     const fontSize: number = height / 576;
+    const ratioFontSize: number = width / 16 * 9 / 576;
 
     slider.style.setProperty('--slide-auto-font-size', `${fontSize}em`);
+    slider.style.setProperty('--slide-auto-ratio-font-size', `${ratioFontSize}em`);
   }
 
   private initKeyboardAssist() {
@@ -300,10 +302,6 @@ export class DeckdeckgoDeck {
 
   @Method()
   async toggleKeyboardAssist(state: boolean) {
-    if (!document) {
-      return;
-    }
-
     if (!this.keyboard) {
       return;
     }
@@ -570,11 +568,11 @@ export class DeckdeckgoDeck {
       }
 
       if (this.dir === 'papyrus') {
-        const slide: HTMLElement = this.el.querySelector('.deckgo-slide-container:nth-child(' + (this.activeIndex + 1) + ')');
+        const slide: HTMLElement | null = this.el.querySelector('.deckgo-slide-container:nth-child(' + (this.activeIndex + 1) + ')');
 
         // HACK: Chrome does not perform any scroll if the behavior 'smooth' is set and the event is triggered programmatically or with the keyboard aka only works if triggered with a click event
         setTimeout(() => {
-          slide.scrollIntoView(this.animation === 'none' ? null : {behavior: 'smooth', block: 'nearest'});
+          slide?.scrollIntoView(this.animation === 'none' ? null : {behavior: 'smooth', block: 'nearest'});
         }, 0);
       }
 
@@ -796,7 +794,7 @@ export class DeckdeckgoDeck {
       }
 
       const slides: Element[] = Array.from(definedSlides).filter((slide: Element) => {
-        return slide.tagName.toLocaleLowerCase().indexOf('deckgo-slide-') > -1;
+        return !slide.hasAttribute('slot') || slide.getAttribute('slot') === '';
       });
 
       resolve(slides as HTMLElement[]);
@@ -1075,7 +1073,7 @@ export class DeckdeckgoDeck {
         return;
       }
 
-      slider.style.setProperty('cursor', show ? 'initial' : 'none');
+      slider.style.setProperty('cursor', show ? 'inherit' : 'none');
       this.mouseInactivity.emit(show);
 
       this.cursorHidden = !show;

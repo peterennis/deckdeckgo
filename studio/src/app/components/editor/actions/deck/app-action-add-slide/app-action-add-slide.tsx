@@ -2,11 +2,13 @@ import {Component, Element, EventEmitter, h, JSX, Prop} from '@stencil/core';
 
 import {modalController, OverlayEventDetail, popoverController} from '@ionic/core';
 
+import i18n from '../../../../../stores/i18n.store';
+
 import {SlideAttributes, SlideSplitType, SlideTemplate} from '../../../../../models/data/slide';
 
 import {CreateSlidesUtils} from '../../../../../utils/editor/create-slides.utils';
-import {PlaygroundAction} from '../../../../../utils/editor/playground-action';
-import {DemoAction} from '../../../../../utils/editor/demo-action';
+import {PlaygroundAction} from '../../../../../types/editor/playground-action';
+import {DemoAction} from '../../../../../types/editor/demo-action';
 
 import {AnonymousService} from '../../../../../services/editor/anonymous/anonymous.service';
 
@@ -49,8 +51,7 @@ export class AppActionAddSlide {
 
     const popover: HTMLIonPopoverElement = await popoverController.create({
       component: 'app-create-slide',
-      event: $event.detail,
-      mode: 'md',
+      mode: 'ios',
       showBackdrop: false,
       cssClass: 'popover-menu popover-menu-wide',
     });
@@ -248,7 +249,7 @@ export class AppActionAddSlide {
         return;
       }
 
-      const url: string = dataFile.downloadUrl;
+      const url: string | undefined = dataFile.downloadUrl;
 
       if (!url || url === undefined || url === '') {
         resolve();
@@ -276,10 +277,10 @@ export class AppActionAddSlide {
   render() {
     return (
       <app-action-busy
-        aria-label="Add slide"
+        aria-label={i18n.state.editor.add_slide}
         iconSrc="/assets/icons/ionicons/add.svg"
         onActionReady={($event: CustomEvent) => this.onActionOpenSlideAdd($event)}>
-        <ion-label aria-hidden="true">Add slide</ion-label>
+        <ion-label aria-hidden="true">{i18n.state.editor.add_slide}</ion-label>
       </app-action-busy>
     );
   }

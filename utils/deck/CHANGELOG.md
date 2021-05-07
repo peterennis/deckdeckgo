@@ -1,3 +1,27 @@
+<a name="3.4.1"></a>
+
+# 3.4.1 (2021-03-25)
+
+### Style
+
+- preserve slide `aspect-ratio` background aspect with `papyrus` too
+
+<a name="3.4.0"></a>
+
+# 3.4.0 (2021-02-19)
+
+### Features
+
+- generic slides detection
+
+<a name="3.3.1"></a>
+
+# 3.3.1 (2021-01-30)
+
+### Style
+
+- default `slot` padding to `8px`
+
 <a name="3.3.0"></a>
 
 # 3.3.0 (2020-11-29)

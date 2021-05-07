@@ -9,9 +9,9 @@ import busyStore from '../../../stores/busy.store';
 import authStore from '../../../stores/auth.store';
 import colorStore from '../../../stores/color.store';
 
-import {debounce, isFullscreen, isIOS, isMobile} from '@deckdeckgo/utils';
+import {debounce, isAndroidTablet, isFullscreen, isIOS, isIPad, isMobile} from '@deckdeckgo/utils';
 
-import {convertStyle} from '@deckdeckgo/deck-utils';
+import {convertStyle, isSlide} from '@deckdeckgo/deck-utils';
 
 import {AuthUser} from '../../../models/auth/auth.user';
 import {SlideTemplate} from '../../../models/data/slide';
@@ -28,16 +28,16 @@ import {ChartEventsHandler} from '../../../handlers/core/events/chart/chart-even
 
 import {EditorHelper} from '../../../helpers/editor/editor.helper';
 
-import {SlotType} from '../../../utils/editor/slot-type';
+import {SlotType} from '../../../types/editor/slot-type';
 import {signIn as navigateSignIn} from '../../../utils/core/signin.utils';
 
 import {AuthService} from '../../../services/auth/auth.service';
 import {AnonymousService} from '../../../services/editor/anonymous/anonymous.service';
-
-import {EnvironmentGoogleConfig} from '../../../services/core/environment/environment-config';
 import {EnvironmentConfigService} from '../../../services/core/environment/environment-config.service';
 import {OfflineService} from '../../../services/editor/offline/offline.service';
 import {FontsService} from '../../../services/editor/fonts/fonts.service';
+
+import {EnvironmentGoogleConfig} from '../../../types/core/environment-config';
 
 @Component({
   tag: 'app-editor',
@@ -287,7 +287,7 @@ export class AppEditor {
         return;
       }
 
-      const slides: any[] = await this.editorHelper.loadDeckAndRetrieveSlides(this.deckId);
+      const slides: JSX.IntrinsicElements[] = await this.editorHelper.loadDeckAndRetrieveSlides(this.deckId);
 
       if (slides && slides.length > 0) {
         this.slides = [...slides];
@@ -326,14 +326,14 @@ export class AppEditor {
     await this.fontsService.loadGoogleFont(google.fontsUrl, this.style);
   }
 
-  private concatSlide(extraSlide: JSX.IntrinsicElements): Promise<void> {
-    return new Promise<void>(async (resolve) => {
-      this.slides = [...this.slides, extraSlide];
+  private async concatSlide(extraSlide: JSX.IntrinsicElements) {
+    this.slides = [...this.slides, extraSlide];
 
-      await ParseDeckSlotsUtils.stickLastChildren(this.el);
+    await ParseDeckSlotsUtils.stickLastChildren(this.el);
+  }
 
-      resolve();
-    });
+  private async replaceSlide(slide: JSX.IntrinsicElements) {
+    this.slides = [...this.slides.map((filteredSlide: JSX.IntrinsicElements, i) => (i === this.activeIndex ? slide : filteredSlide))];
   }
 
   private async animatePrevNextSlide($event: CustomEvent<boolean>) {
@@ -374,6 +374,14 @@ export class AppEditor {
     if (slide) {
       await this.concatSlide(slide);
     }
+  }
+
+  private async transformSlide($event: CustomEvent<JSX.IntrinsicElements>) {
+    if (!$event || !$event.detail) {
+      return;
+    }
+
+    await this.replaceSlide($event.detail);
   }
 
   private async addSlide($event: CustomEvent<JSX.IntrinsicElements>) {
@@ -427,7 +435,7 @@ export class AppEditor {
 
       const selectedElement: HTMLElement = $event.detail;
 
-      if (!selectedElement.nodeName || selectedElement.nodeName.toLowerCase().indexOf('deckgo-slide') >= 0) {
+      if (isSlide(selectedElement)) {
         resolve();
         return;
       }
@@ -596,7 +604,7 @@ export class AppEditor {
   }
 
   private initMainSize() {
-    if (!this.contentRef || isFullscreen() || isMobile()) {
+    if (!this.contentRef || isFullscreen() || (isMobile() && !isIPad() && !isAndroidTablet())) {
       this.mainSize = {
         width: isMobile() ? 'calc(100% - 32px)' : '100%',
         height: isMobile() ? 'calc(100% - 32px)' : '100%',
@@ -606,7 +614,9 @@ export class AppEditor {
 
     const maxHeight: number = this.contentRef.offsetHeight - 32;
 
-    const width: number = this.contentRef.offsetWidth - 32;
+    const wideScreen: MediaQueryList = window.matchMedia('(min-width: 1200px)');
+
+    const width: number = this.contentRef.offsetWidth - (wideScreen.matches ? 192 : 32);
     const height: number = (width * 9) / 16;
 
     this.mainSize =
@@ -717,56 +727,73 @@ export class AppEditor {
     this.activeIndex = index;
   }
 
+  private async selectStep($event: CustomEvent<HTMLElement>) {
+    this.actionsEditorRef?.selectStep($event?.detail);
+  }
+
   render() {
     const autoSlide: boolean = deckStore.state.deck?.data?.attributes?.autoSlide !== undefined ? deckStore.state.deck.data.attributes.autoSlide : false;
 
     return [
       <app-navigation publish={true} class={this.hideNavigation ? 'hidden' : undefined}></app-navigation>,
-      <ion-content ref={(el) => (this.contentRef = el as HTMLElement)}>
-        <main
-          ref={(el) => (this.mainRef = el as HTMLElement)}
-          class={busyStore.state.slideReady ? (this.presenting ? 'ready idle' : 'ready') : undefined}
-          style={{'--main-size-width': this.mainSize?.width, '--main-size-height': this.mainSize?.height}}>
-          {this.renderLoading()}
-          <deckgo-deck
-            ref={(el) => (this.deckRef = el as HTMLDeckgoDeckElement)}
-            embedded={true}
-            style={this.style}
-            reveal={this.fullscreen && this.presenting}
-            direction={this.direction}
-            directionMobile={this.directionMobile}
-            animation={this.animation}
-            autoSlide={this.fullscreen && this.presenting && autoSlide ? 'true' : 'false'}
-            onMouseDown={(e: MouseEvent) => this.deckTouched(e)}
-            onTouchStart={(e: TouchEvent) => this.deckTouched(e)}
-            onSlideNextDidChange={() => this.onSlideChange()}
-            onSlidePrevDidChange={() => this.onSlideChange()}
-            onSlideToChange={() => this.onSlideChange()}>
-            {this.slides}
-            {this.background}
-            {this.header}
-            {this.footer}
-          </deckgo-deck>
-          <deckgo-remote autoConnect={false}></deckgo-remote>
-          <app-slide-warning></app-slide-warning>
-        </main>
+      <ion-content class="ion-no-padding">
+        <div class="grid">
+          <div class="deck" ref={(el) => (this.contentRef = el as HTMLElement)}>
+            <main
+              ref={(el) => (this.mainRef = el as HTMLElement)}
+              class={busyStore.state.slideReady ? (this.presenting ? 'ready idle' : 'ready') : undefined}
+              style={{'--main-size-width': this.mainSize?.width, '--main-size-height': this.mainSize?.height}}>
+              {this.renderLoading()}
+              <deckgo-deck
+                ref={(el) => (this.deckRef = el as HTMLDeckgoDeckElement)}
+                embedded={true}
+                style={this.style}
+                reveal={this.fullscreen && this.presenting}
+                direction={this.direction}
+                directionMobile={this.directionMobile}
+                animation={this.animation}
+                autoSlide={this.fullscreen && this.presenting && autoSlide ? 'true' : 'false'}
+                onMouseDown={(e: MouseEvent) => this.deckTouched(e)}
+                onTouchStart={(e: TouchEvent) => this.deckTouched(e)}
+                onSlideNextDidChange={() => this.onSlideChange()}
+                onSlidePrevDidChange={() => this.onSlideChange()}
+                onSlideToChange={() => this.onSlideChange()}>
+                {this.slides}
+                {this.background}
+                {this.header}
+                {this.footer}
+              </deckgo-deck>
+              <deckgo-remote autoConnect={false}></deckgo-remote>
+              <app-slide-warning></app-slide-warning>
+            </main>
+          </div>
+
+          <app-breadcrumbs slideNumber={this.activeIndex} onStepTo={($event: CustomEvent<HTMLElement>) => this.selectStep($event)}></app-breadcrumbs>
+
+          <app-actions-editor
+            ref={(el) => (this.actionsEditorRef = el as HTMLAppActionsEditorElement)}
+            hideActions={this.hideActions}
+            fullscreen={this.fullscreen}
+            slides={this.slides}
+            slideNumber={this.activeIndex}
+            onSignIn={() => this.signIn()}
+            onAddSlide={($event: CustomEvent<JSX.IntrinsicElements>) => this.addSlide($event)}
+            onAnimatePrevNextSlide={($event: CustomEvent<boolean>) => this.animatePrevNextSlide($event)}
+            onSlideTo={($event: CustomEvent<number>) => this.slideTo($event)}
+            onSlideCopy={($event: CustomEvent<HTMLElement>) => this.copySlide($event)}
+            onSlideTransform={($event: CustomEvent<JSX.IntrinsicElements>) => this.transformSlide($event)}
+            onElementFocus={($event: CustomEvent<HTMLElement>) => this.onElementFocus($event)}
+            onPresenting={($event: CustomEvent<boolean>) => this.updatePresenting($event?.detail)}></app-actions-editor>
+        </div>
         <app-slide-preview deckRef={this.deckRef}></app-slide-preview>
+        {this.renderLaserPointer()}
       </ion-content>,
-      <app-actions-editor
-        ref={(el) => (this.actionsEditorRef = el as HTMLAppActionsEditorElement)}
-        hideActions={this.hideActions}
-        fullscreen={this.fullscreen}
-        slides={this.slides}
-        slideNumber={this.activeIndex}
-        onSignIn={() => this.signIn()}
-        onAddSlide={($event: CustomEvent<JSX.IntrinsicElements>) => this.addSlide($event)}
-        onAnimatePrevNextSlide={($event: CustomEvent<boolean>) => this.animatePrevNextSlide($event)}
-        onSlideTo={($event: CustomEvent<number>) => this.slideTo($event)}
-        onSlideCopy={($event: CustomEvent<HTMLElement>) => this.copySlide($event)}
-        onElementFocus={($event: CustomEvent<HTMLElement>) => this.onElementFocus($event)}
-        onPresenting={($event: CustomEvent<boolean>) => this.updatePresenting($event?.detail)}></app-actions-editor>,
       this.renderInlineEditor(),
     ];
+  }
+
+  private renderLaserPointer() {
+    return this.fullscreen && this.presenting ? <deckgo-laser-pointer></deckgo-laser-pointer> : undefined;
   }
 
   private renderInlineEditor() {

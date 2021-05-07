@@ -4,8 +4,9 @@ import {OverlayEventDetail, popoverController} from '@ionic/core';
 import deckStore from '../../../../../stores/deck.store';
 import userStore from '../../../../../stores/user.store';
 import shareStore from '../../../../../stores/share.store';
+import i18n from '../../../../../stores/i18n.store';
 
-import {MoreAction} from '../../../../../utils/editor/more-action';
+import {MoreAction} from '../../../../../types/editor/more-action';
 
 @Component({
   tag: 'app-action-share',
@@ -60,12 +61,12 @@ export class AppActionShare {
       <button
         onMouseDown={($event) => $event.stopPropagation()}
         onTouchStart={($event) => $event.stopPropagation()}
-        aria-label="Share"
+        aria-label={i18n.state.editor.share}
         onClick={($event: UIEvent) => this.share($event)}
         class="ion-activatable">
         <ion-ripple-effect></ion-ripple-effect>
         <ion-icon aria-hidden="true" src="/assets/icons/ionicons/share.svg"></ion-icon>
-        <ion-label aria-hidden="true">Share</ion-label>
+        <ion-label aria-hidden="true">{i18n.state.editor.share}</ion-label>
       </button>
     );
   }

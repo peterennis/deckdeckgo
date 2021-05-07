@@ -13,6 +13,7 @@ The following guide is here to try to guide you through the process of contribut
 - [Issues](#issues)
 - [Bugs and features requests](#bugs-and-features-requests)
 - [Translation](#translation)
+- [Documentation](#documentation)
 
 ## How to get Involved
 
@@ -42,9 +43,25 @@ Some bugs (sh\*t happens) might not yet been reported. Likewise, your awesome id
 
 ## Translation
 
-We are in the making of adding i18n to our applications. These following are those which can be currently translated.
-
 We would be grateful to get your help to translate our apps!
+
+### Editor
+
+The online editor ([studio](https://github.com/deckgo/deckdeckgo/tree/master/studio)) can be translated as following:
+
+1. Copy [en.json](https://github.com/deckgo/deckdeckgo/blob/master/studio/src/assets/i18n/en.json) to a new filename reflecting the language (such as for example `fr.json` for French)
+2. Translate each keys of the newly created file
+3. Provide a PR
+
+If you would like to test your translations, either test these by overwriting temporarily [en.json](https://github.com/deckgo/deckdeckgo/blob/master/studio/src/assets/i18n/en.json) or add the new language as following:
+
+1. Add it the to the list of supported languages in [languages.d.ts](https://github.com/deckgo/deckdeckgo/blob/main/studio/src/app/definitions/languages.d.ts)
+2. Add a related dynamic import in the state management [i18n.store.ts](https://github.com/deckgo/deckdeckgo/blob/bdc79b9cd1f52171bab2f772fa6905c710f3b2e0/studio/src/app/stores/i18n.store.ts#L11)
+3. Add it to the default language detection list in [lang.service.ts](https://github.com/deckgo/deckdeckgo/blob/bdc79b9cd1f52171bab2f772fa6905c710f3b2e0/studio/src/app/services/lang/lang.service.ts#L36)
+
+Translations are handled in JSON files but, as we are consuming these through a store, their representation have to exist as interfaces.
+To ease the process we have developed a script which extract the declarations automatically.
+In case you would add new keys, run `npm run i18n` to generate the interfaces.
 
 ### Site
 
@@ -54,5 +71,28 @@ The new website of [DeckDeckGo] supports i18n. To provide a new language with a 
 2. Translate the text of the pages "index, enterprise and discover" in their related [json](https://github.com/deckgo/deckdeckgo/tree/master/site/src/assets/i18n/) data.
 3. Translate all other pages directly in their related Javascript files (we did not extract the text from the "simple" page).
 4. Provide a translation for the [meta](https://github.com/deckgo/deckdeckgo/blob/master/site/gatsby-config.js) description.
+
+### Remote
+
+The remote control is not yet translated. If you think that's a must, let us now!
+
+### Docs
+
+We don't plan to translate the documentation for developers, it seems like quite a big task. That being said, we are welcoming contributions. If you are up to, for sure that would be awesome!
+
+## Documentation
+
+The source of our [documentation](https://docs.deckdeckgo.com) are available in the [docs](https://github.com/deckgo/deckdeckgo/tree/main/docs) app.
+
+Any improvements regarding this subject are welcomed!
+
+If you are looking to document a new or existing web component, proceed as following:
+
+- document properties, methods, styles etc. in the component itself. We leverage the ability to generate automatically [README.md](https://stenciljs.com/docs/docs-readme) at build time with Stencil
+- fetch the component with a CDN in [preview-head.html](https://github.com/deckgo/deckdeckgo/blob/main/docs/.storybook/preview-head.html)
+- add a menu entry in [entry.js](https://github.com/deckgo/deckdeckgo/blob/main/docs/.storybook/preview.js)
+- add a new story and import readme, see folder [components](https://github.com/deckgo/deckdeckgo/tree/main/docs/src/stories/components)
+
+When trying out your documentation locally, run the docs, Storybook, with the "no cache" option to be sure that you get your change (`npm run start-no-cache`)
 
 [deckdeckgo]: https://deckdeckgo.com

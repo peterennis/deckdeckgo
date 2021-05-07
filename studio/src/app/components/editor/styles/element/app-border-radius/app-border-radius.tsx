@@ -2,6 +2,13 @@ import {Component, Event, EventEmitter, h, Prop, State, Fragment} from '@stencil
 
 import {RangeChangeEventDetail} from '@ionic/core';
 
+import settingsStore from '../../../../../stores/settings.store';
+import i18n from '../../../../../stores/i18n.store';
+
+import {SettingsUtils} from '../../../../../utils/core/settings.utils';
+
+import {EditMode, Expanded} from '../../../../../types/core/settings';
+
 @Component({
   tag: 'app-border-radius',
 })
@@ -21,14 +28,40 @@ export class AppBorderRadius {
   @State()
   private cornersExpanded: boolean = false;
 
+  @State()
+  private borderRadiusCSS: string;
+
   private readonly maxBorderRadius: number = 64;
 
   @Event() borderRadiusDidChange: EventEmitter<void>;
 
+  private destroyListener;
+
   async componentWillLoad() {
     await this.initBorderRadius();
-
     await this.initCornersExpanded();
+
+    await this.initBorderRadiusCSS();
+
+    this.destroyListener = settingsStore.onChange('editMode', async (edit: EditMode) => {
+      if (edit === 'css') {
+        await this.initBorderRadiusCSS();
+        return;
+      }
+
+      await this.initBorderRadius();
+      await this.initCornersExpanded();
+    });
+  }
+
+  disconnectedCallback() {
+    if (this.destroyListener) {
+      this.destroyListener();
+    }
+  }
+
+  private async initBorderRadiusCSS() {
+    this.borderRadiusCSS = this.selectedElement?.style.borderRadius;
   }
 
   private async initBorderRadius() {
@@ -89,31 +122,54 @@ export class AppBorderRadius {
     this.cornersExpanded = $event.detail.value;
   }
 
+  private handleInput($event: CustomEvent<KeyboardEvent>) {
+    this.borderRadiusCSS = ($event.target as InputTargetEvent).value;
+  }
+
+  private async updateBorderRadiusCSS() {
+    this.selectedElement.style.borderRadius = this.borderRadiusCSS;
+
+    this.emitBorderRadiusChange();
+  }
+
   render() {
     return (
-      <app-expansion-panel expanded="close">
-        <ion-label slot="title">Border radius</ion-label>
-        <ion-item class="select">
-          <ion-select
-            value={this.cornersExpanded}
-            onIonChange={($event: CustomEvent) => this.selectCornersToShow($event)}
-            interface="popover"
-            mode="md"
-            class="ion-padding-start ion-padding-end">
-            <ion-select-option value={false}>All corners</ion-select-option>
-            <ion-select-option value={true}>Individual corners</ion-select-option>
-          </ion-select>
-        </ion-item>
-        <ion-list>
+      <app-expansion-panel
+        expanded={settingsStore.state.panels.borderRadius}
+        onExpansion={($event: CustomEvent<Expanded>) => SettingsUtils.update({borderRadius: $event.detail})}>
+        <ion-label slot="title">{i18n.state.editor.border_radius}</ion-label>
+        <ion-list class="properties">
+          <ion-item class="select">
+            <ion-select
+              value={this.cornersExpanded}
+              onIonChange={($event: CustomEvent) => this.selectCornersToShow($event)}
+              interface="popover"
+              mode="md"
+              class="ion-padding-start ion-padding-end">
+              <ion-select-option value={false}>{i18n.state.editor.all_corners}</ion-select-option>
+              <ion-select-option value={true}>{i18n.state.editor.individual_corners}</ion-select-option>
+            </ion-select>
+          </ion-item>
           {!this.cornersExpanded ? this.renderOption('General', 'Every corner') : undefined}
           {this.cornersExpanded && (
             <Fragment>
-              {this.renderOption('TopLeft', 'Top left')}
-              {this.renderOption('TopRight', 'Top right')}
-              {this.renderOption('BottomRight', 'Bottom right')}
-              {this.renderOption('BottomLeft', 'Bottom left')}
+              {this.renderOption('TopLeft', i18n.state.editor.top_left)}
+              {this.renderOption('TopRight', i18n.state.editor.top_right)}
+              {this.renderOption('BottomRight', i18n.state.editor.bottom_right)}
+              {this.renderOption('BottomLeft', i18n.state.editor.bottom_left)}
             </Fragment>
           )}
+        </ion-list>
+
+        <ion-list class="css">
+          <ion-item class="with-padding">
+            <ion-input
+              value={this.borderRadiusCSS}
+              placeholder={i18n.state.editor.border_radius}
+              debounce={500}
+              onIonInput={(e: CustomEvent<KeyboardEvent>) => this.handleInput(e)}
+              onIonChange={async () => await this.updateBorderRadiusCSS()}></ion-input>
+          </ion-item>
         </ion-list>
       </app-expansion-panel>
     );
@@ -128,9 +184,9 @@ export class AppBorderRadius {
           {text} <small>{borderRadius}px</small>
         </ion-label>
       </ion-item-divider>,
-      <ion-item class="item-opacity">
+      <ion-item class="item-range">
         <ion-range
-          color="primary"
+          color="dark"
           min={0}
           max={this.maxBorderRadius}
           value={this.borderRadiuses.get(option)}

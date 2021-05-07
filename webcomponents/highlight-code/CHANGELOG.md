@@ -1,3 +1,56 @@
+# 2.6.0 (2021-04-23)
+
+### Features
+
+- better support for JSX / HTML markup when component editable
+
+# 2.5.2 (2021-04-23)
+
+### Styles
+
+- add new CSS variable `--deckgo-editable-cursor`
+
+# 2.5.1 (2021-03-07)
+
+### Styles
+
+- add new CSS variable `--deckgo-highlight-code-line-height`
+
+# 2.5.0 (2021-02-17)
+
+### Features
+
+- expose const `deckdeckgoHighlightCodeLanguages` to make the list of supported languages programmatically readable
+
+# 2.4.0 (2021-02-17)
+
+### Features
+
+- improve `highlight-lines` to support single digit line (as for example `1,1` or `1` accepted)
+- update languages list
+
+# 2.3.2 (2021-01-29)
+
+### Features
+
+- on content editable `input`, debounce the copy of the changes to the `slot`
+
+# 2.3.1 (2021-01-14)
+
+### Style
+
+- carbon toolbar spacing if not displayed
+
+# 2.3.0 (2021-01-14)
+
+### Features
+
+Some new features related to the `editable` mode:
+
+- make the shadowed `code` editable instead of `slot` (less quirky ui)
+- on click on the host component, focus the editable `code`
+- tab support
+
 # 2.2.2 (2020-12-10)
 
 ### Features

@@ -1,3 +1,26 @@
+<a name="2.2.0"></a>
+
+# 2.2.0 (2021-03-25)
+
+- new storage function `watchDeckImport` for figma import
+
+<a name="2.1.0"></a>
+
+# 2.1.0 (2021-01-31)
+
+- publish templates to API
+
+<a name="2.0.0"></a>
+
+# 2.0.0 (2021-01-29)
+
+- publish to GitHub
+- tasks queue
+- endpoint to get "feed" data
+- no Mailchimp on staging and dev
+
+Long time since I did not update this README, I'll try to keep up-to-date in the future too.
+
 <a name="1.1.1"></a>
 
 # 1.1.1 (2020-06-19)

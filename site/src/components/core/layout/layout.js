@@ -10,12 +10,13 @@ import '../../../themes/fonts.scss';
 import '../../../themes/theme.scss';
 import '../../../themes/main.scss';
 import '../../../themes/input.scss';
+import '../../../themes/links.scss';
 import '../../../themes/variables.scss';
 
 import SEO from '../seo/seo';
 import Navigation from '../navigation/navigation';
 
-import styles from './layout.module.scss';
+import {sticky as stickyStyles} from './layout.module.scss';
 
 import {defineCustomElements as deckDeckGoCoreElement} from '@deckdeckgo/core/dist/loader';
 
@@ -39,7 +40,7 @@ deckDeckGoYoutube();
 deckDeckGoCharts();
 deckDeckGoQRCode();
 
-export default ({children, location, messages, sticky = true, dark}) => {
+const Layout = ({children, location, messages, sticky = true, navTheme}) => {
   const data = useStaticQuery(graphql`
     query SiteTitleQuery {
       site {
@@ -61,12 +62,14 @@ export default ({children, location, messages, sticky = true, dark}) => {
     <IntlProvider locale={langKey} messages={messages}>
       <SEO lang={langKey} />
 
-      <Navigation lang={langKey} dark={dark} />
+      <Navigation lang={langKey} navTheme={navTheme} />
 
-      <div className={sticky ? styles.sticky : undefined}>{children}</div>
+      <div className={sticky ? stickyStyles : undefined}>{children}</div>
     </IntlProvider>
   );
 };
+
+export default Layout;
 
 // IE9: https://stackoverflow.com/questions/5472938/does-ie9-support-console-log-and-is-it-a-real-function#answer-5473193
 const log = Function.prototype.bind.call(console.log, console);

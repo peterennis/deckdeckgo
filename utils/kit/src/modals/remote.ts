@@ -1,5 +1,3 @@
-import {disconnectRemoteControl, reconnectRemoteControl} from '../remote/controller';
-
 export const openRemote = async ($event: UIEvent | undefined) => {
   $event?.preventDefault();
 
@@ -138,10 +136,6 @@ function getRemoteControlInfo(connected: boolean) {
 }
 
 function getRemoteControlRoom() {
-  if (!document) {
-    return '';
-  }
-
   const deckgoRemoteElement = document.querySelector('deckgo-remote') as HTMLDeckgoRemoteElement | null;
 
   if (!deckgoRemoteElement) {
@@ -208,4 +202,32 @@ async function nextPendingRequests() {
 
   // If we get some more requests pending, we automatically reopen the popover
   await askAccess();
+}
+
+export async function disconnectRemoteControl() {
+  const deckgoRemoteElement: HTMLDeckgoRemoteElement | null = document.querySelector('deckgo-remote') as HTMLDeckgoRemoteElement | null;
+
+  if (!deckgoRemoteElement) {
+    return;
+  }
+
+  await deckgoRemoteElement.disconnect();
+}
+
+export async function reconnectRemoteControl() {
+  const deckgoRemoteElement: HTMLDeckgoRemoteElement | null = document.querySelector('deckgo-remote') as HTMLDeckgoRemoteElement | null;
+
+  if (!deckgoRemoteElement) {
+    return;
+  }
+
+  await deckgoRemoteElement.connect();
+
+  const deck: HTMLDeckgoDeckElement | null = document.getElementById('slider') as HTMLDeckgoDeckElement | null;
+
+  if (!deck) {
+    return;
+  }
+
+  await deck.slideTo(0, 300, false);
 }

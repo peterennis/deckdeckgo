@@ -2,7 +2,13 @@ import {Component, Event, EventEmitter, h, Prop, State} from '@stencil/core';
 
 import {RangeChangeEventDetail} from '@ionic/core';
 
+import settingsStore from '../../../../../stores/settings.store';
+import i18n from '../../../../../stores/i18n.store';
+
 import {ColorUtils, InitStyleColor} from '../../../../../utils/editor/color.utils';
+import {SettingsUtils} from '../../../../../utils/core/settings.utils';
+
+import {EditMode, Expanded} from '../../../../../types/core/settings';
 
 @Component({
   tag: 'app-box-shadow',
@@ -26,6 +32,9 @@ export class AppBoxShadow {
   @State()
   private boxShadow: boolean = false;
 
+  @State()
+  private boxShadowCSS: string;
+
   @Event() boxShadowDidChange: EventEmitter<void>;
 
   private readonly MAX_HORIZONTAL_LENGTH: number = 200;
@@ -33,8 +42,30 @@ export class AppBoxShadow {
   private readonly MAX_SPEED_RADIUS: number = 200;
   private readonly MAX_BLUR_RADIUS: number = 100;
 
+  private destroyListener;
+
   async componentWillLoad() {
     await this.init();
+    await this.initCSS();
+
+    this.destroyListener = settingsStore.onChange('editMode', async (edit: EditMode) => {
+      if (edit === 'css') {
+        await this.initCSS();
+        return;
+      }
+
+      await this.init();
+    });
+  }
+
+  disconnectedCallback() {
+    if (this.destroyListener) {
+      this.destroyListener();
+    }
+  }
+
+  private async initCSS() {
+    this.boxShadowCSS = this.selectedElement?.style.boxShadow;
   }
 
   private async init() {
@@ -176,26 +207,38 @@ export class AppBoxShadow {
     this.emitBoxShadowChange();
   }
 
+  private handleInput($event: CustomEvent<KeyboardEvent>) {
+    this.boxShadowCSS = ($event.target as InputTargetEvent).value;
+  }
+
+  private async updateLetterSpacingCSS() {
+    this.selectedElement.style.boxShadow = this.boxShadowCSS;
+
+    this.emitBoxShadowChange();
+  }
+
   render() {
     return (
-      <app-expansion-panel expanded={'close'}>
-        <ion-label slot="title">Box shadow</ion-label>
+      <app-expansion-panel
+        expanded={settingsStore.state.panels.boxShadow}
+        onExpansion={($event: CustomEvent<Expanded>) => SettingsUtils.update({boxShadow: $event.detail})}>
+        <ion-label slot="title">{i18n.state.editor.box_shadow}</ion-label>
 
         <app-color
-          class="ion-margin-top"
+          class="ion-margin-top properties"
           initColor={this.initColor}
           onResetColor={() => this.resetBoxShadow()}
           onColorDidChange={($event: CustomEvent<string>) => this.selectColor($event)}></app-color>
 
-        <ion-list>
+        <ion-list class="properties">
           <ion-item-divider class="ion-padding-top">
             <ion-label>
-              Horizontal length <small>{this.boxShadowProperties.get('hLength')}px</small>
+              {i18n.state.editor.horizontal_length} <small>{this.boxShadowProperties.get('hLength')}px</small>
             </ion-label>
           </ion-item-divider>
-          <ion-item>
+          <ion-item class="item-range">
             <ion-range
-              color="primary"
+              color="dark"
               min={-this.MAX_HORIZONTAL_LENGTH}
               max={this.MAX_HORIZONTAL_LENGTH}
               value={this.boxShadowProperties.get('hLength')}
@@ -205,12 +248,12 @@ export class AppBoxShadow {
           </ion-item>
           <ion-item-divider class="ion-padding-top">
             <ion-label>
-              Vertical length <small>{this.boxShadowProperties.get('vLength')}px</small>
+              {i18n.state.editor.vertical_length} <small>{this.boxShadowProperties.get('vLength')}px</small>
             </ion-label>
           </ion-item-divider>
-          <ion-item>
+          <ion-item class="item-range">
             <ion-range
-              color="primary"
+              color="dark"
               min={-this.MAX_VERTICAL_LENGTH}
               max={this.MAX_VERTICAL_LENGTH}
               value={this.boxShadowProperties.get('vLength')}
@@ -220,12 +263,12 @@ export class AppBoxShadow {
           </ion-item>
           <ion-item-divider class="ion-padding-top">
             <ion-label>
-              Blur radius <small>{this.boxShadowProperties.get('blurRadius')}px</small>
+              {i18n.state.editor.blur_radius} <small>{this.boxShadowProperties.get('blurRadius')}px</small>
             </ion-label>
           </ion-item-divider>
-          <ion-item>
+          <ion-item class="item-range">
             <ion-range
-              color="primary"
+              color="dark"
               min={0}
               max={this.MAX_BLUR_RADIUS}
               value={this.boxShadowProperties.get('blurRadius')}
@@ -235,18 +278,29 @@ export class AppBoxShadow {
           </ion-item>
           <ion-item-divider class="ion-padding-top">
             <ion-label>
-              Spread radius <small>{this.boxShadowProperties.get('spreadRadius')}px</small>
+              {i18n.state.editor.spread_radius} <small>{this.boxShadowProperties.get('spreadRadius')}px</small>
             </ion-label>
           </ion-item-divider>
-          <ion-item>
+          <ion-item class="item-range">
             <ion-range
-              color="primary"
+              color="dark"
               min={-this.MAX_SPEED_RADIUS}
               max={this.MAX_SPEED_RADIUS}
               value={this.boxShadowProperties.get('spreadRadius')}
               mode="md"
               disabled={!this.boxShadow}
               onIonChange={($event: CustomEvent<RangeChangeEventDetail>) => this.updateBoxShadowProperties($event, 'spreadRadius')}></ion-range>
+          </ion-item>
+        </ion-list>
+
+        <ion-list class="css">
+          <ion-item class="with-padding">
+            <ion-input
+              value={this.boxShadowCSS}
+              placeholder="box-shadow"
+              debounce={500}
+              onIonInput={(e: CustomEvent<KeyboardEvent>) => this.handleInput(e)}
+              onIonChange={async () => await this.updateLetterSpacingCSS()}></ion-input>
           </ion-item>
         </ion-list>
       </app-expansion-panel>

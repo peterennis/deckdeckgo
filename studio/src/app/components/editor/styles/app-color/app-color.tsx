@@ -7,14 +7,17 @@ import {DeckdeckgoPalette, DeckdeckgoPaletteColor} from '@deckdeckgo/color';
 import {debounce, extractRgb, hexToRgb, rgbToHex} from '@deckdeckgo/utils';
 
 import colorStore from '../../../../stores/color.store';
+import i18n from '../../../../stores/i18n.store';
 
 import {ColorUtils, InitStyleColor} from '../../../../utils/editor/color.utils';
+import settingsStore from '../../../../stores/settings.store';
+import {EditMode} from '../../../../types/core/settings';
 
 @Component({
   tag: 'app-color',
   styleUrl: 'app-color.scss',
 })
-export class AppImage {
+export class AppColor {
   @Prop()
   initColor: () => Promise<InitStyleColor>;
 
@@ -27,11 +30,16 @@ export class AppImage {
   @State()
   private opacity: number = 100;
 
+  @State()
+  private colorCSS: string;
+
   @Event()
   colorDidChange: EventEmitter<string>;
 
   @Event()
   resetColor: EventEmitter<void>;
+
+  private destroyListener;
 
   private readonly debounceHandleHexInput: ($event: CustomEvent<KeyboardEvent>) => void = debounce(async ($event: CustomEvent<KeyboardEvent>) => {
     await this.handleHexInput($event);
@@ -46,6 +54,16 @@ export class AppImage {
 
   async componentWillLoad() {
     await this.loadColor();
+
+    this.destroyListener = settingsStore.onChange('editMode', async (_edit: EditMode) => {
+      await this.loadColor();
+    });
+  }
+
+  disconnectedCallback() {
+    if (this.destroyListener) {
+      this.destroyListener();
+    }
   }
 
   @Watch('initColor')
@@ -60,6 +78,16 @@ export class AppImage {
     await this.initColorStateRgb(rgb);
 
     this.opacity = opacity ? opacity : 100;
+
+    await this.initColorCSS();
+  }
+
+  private async initColorCSS() {
+    if (!this.color.rgb?.value) {
+      return;
+    }
+
+    this.colorCSS = `rgba(${this.color.rgb.value}, ${this.opacity / 100})`;
   }
 
   private async initColorStateRgb(rgb: string | undefined) {
@@ -100,6 +128,7 @@ export class AppImage {
     $event.stopPropagation();
 
     await this.initColorStateRgb(color.rgb);
+    await this.initColorCSS();
 
     await this.colorChange();
   }
@@ -184,12 +213,31 @@ export class AppImage {
     await this.colorChange();
   }
 
+  private handleInput($event: CustomEvent<KeyboardEvent>) {
+    this.colorCSS = ($event.target as InputTargetEvent).value;
+  }
+
+  private async updateColorCSS() {
+    this.colorDidChange.emit(this.colorCSS);
+  }
+
   render() {
     return (
       <Fragment>
-        <ion-list class="inputs-list">
+        <ion-list class="inputs-list properties">
           {this.renderColorPicker()}
           {this.renderOpacity()}
+        </ion-list>
+
+        <ion-list class="css">
+          <ion-item class="with-padding ion-margin-bottom">
+            <ion-input
+              value={this.colorCSS}
+              placeholder={i18n.state.editor.color}
+              debounce={500}
+              onIonInput={(e: CustomEvent<KeyboardEvent>) => this.handleInput(e)}
+              onIonChange={async () => await this.updateColorCSS()}></ion-input>
+          </ion-item>
         </ion-list>
 
         {this.renderColorHistory()}
@@ -202,10 +250,15 @@ export class AppImage {
 
     return (
       <div class="color-picker item-input">
-        <input type="color" slot="start" arial-label="Color picker" value={colorValue} onChange={($event) => this.onColorPickerChange($event)}></input>
+        <input
+          type="color"
+          slot="start"
+          arial-label={i18n.state.editor.color_picker}
+          value={colorValue}
+          onChange={($event) => this.onColorPickerChange($event)}></input>
         {this.renderColorInput()}
-        <button slot="end" class="reset" arial-label="Reset" onClick={($event: UIEvent) => this.emitReset($event)}>
-          <ion-icon aria-label="Close" src="/assets/icons/ionicons/close.svg"></ion-icon>
+        <button slot="end" class="reset" arial-label={i18n.state.core.reset} onClick={($event: UIEvent) => this.emitReset($event)}>
+          <ion-icon src="/assets/icons/ionicons/close.svg"></ion-icon>
         </button>
 
         {this.renderColorSwitcher()}
@@ -225,7 +278,7 @@ export class AppImage {
           value={this.color?.hex}
           name="color"
           placeholder="#000000"
-          arial-label="Color"></ion-input>
+          arial-label={i18n.state.editor.color}></ion-input>
       );
     } else {
       return (
@@ -240,7 +293,7 @@ export class AppImage {
             max={'255'}
             name="r"
             placeholder="R"
-            arial-label="Rgb - Red"></ion-input>
+            arial-label={i18n.state.editor.rgb_red}></ion-input>
           <ion-input
             input-mode="tel"
             value={this.color?.rgb?.g}
@@ -251,7 +304,7 @@ export class AppImage {
             max={'255'}
             name="g"
             placeholder="G"
-            arial-label="Rgb - Green"></ion-input>
+            arial-label={i18n.state.editor.rgb_green}></ion-input>
           <ion-input
             input-mode="tel"
             value={this.color?.rgb?.b}
@@ -262,7 +315,7 @@ export class AppImage {
             max={'255'}
             name="b"
             placeholder="B"
-            arial-label="Rgb - Blue"></ion-input>
+            arial-label={i18n.state.editor.rgb_blue}></ion-input>
         </div>
       );
     }
@@ -285,7 +338,7 @@ export class AppImage {
             Opacity <small>{this.opacity}%</small>
           </ion-label>
         </ion-item-divider>
-        <ion-item class="item-opacity">
+        <ion-item class="item-range">
           <ion-range
             min={0}
             max={100}
@@ -308,7 +361,7 @@ export class AppImage {
       return (
         <ion-fab-button
           size="small"
-          style={{'--background': palette.color.hex}}
+          style={{'--background': palette.color.hex, '--background-hover': palette.color.hex, '--background-activated': palette.color.hex}}
           onClick={($event: UIEvent) => this.selectColor($event, palette.color)}></ion-fab-button>
       );
     });

@@ -28,7 +28,7 @@ deckgo-deck section,
 deckgo-deck ol,
 deckgo-deck ul,
 deckgo-deck deckgo-reveal-list {
-  padding: 8px 16px;
+  padding: 8px;
 }
 
 deckgo-deck h1,
@@ -161,6 +161,13 @@ deckgo-deck.papyrus [slot="background"] > deckgo-lazy-img {
 
 deckgo-deck.papyrus deckgo-lazy-img[slot] {
   --deckgo-lazy-img-height: auto;
+}
+
+deckgo-deck.papyrus > deckgo-slide-aspect-ratio div[slot="background"] {
+  width: var(--slide-width);
+  height: calc(var(--slide-width) * 9 / 16);
+  top: 50%;
+  transform: translate(0, -50%);
 }
 
 deckgo-deck > svg[wave] {

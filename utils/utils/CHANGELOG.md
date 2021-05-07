@@ -1,3 +1,21 @@
+<a name="1.8.1"></a>
+
+# 1.8.1 (2021-04-23)
+
+### Chore
+
+- remove document check
+
+<a name="1.8.0"></a>
+
+# 1.8.0 (2021-01-30)
+
+### Features
+
+- `isAndroid`
+- `isAndroidTablet`
+- use `fullscreenElement` (with prefix) to detect full screen
+
 <a name="1.7.0"></a>
 
 # 1.7.0 (2020-11-21)

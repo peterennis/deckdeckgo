@@ -2,7 +2,7 @@ import {Component, Prop, Watch, Element, Method, EventEmitter, Event, Listen, St
 
 import Prism from 'prismjs';
 
-import {injectCSS} from '@deckdeckgo/utils';
+import {debounce, injectCSS} from '@deckdeckgo/utils';
 
 import {loadTheme} from '../../utils/themes-loader.utils';
 
@@ -14,6 +14,10 @@ import {DeckdeckgoHighlightCodeTerminal} from '../../declarations/deckdeckgo-hig
 
 import {deckdeckgoHighlightCodeLanguages} from '../../declarations/deckdeckgo-highlight-code-languages';
 
+/**
+ * @slot code - A `<code/>` element to highlight
+ * @slot user - A user name for the Ubuntu terminal
+ */
 @Component({
   tag: 'deckgo-highlight-code',
   styleUrl: 'deckdeckgo-highlight-code.scss',
@@ -22,31 +26,70 @@ import {deckdeckgoHighlightCodeLanguages} from '../../declarations/deckdeckgo-hi
 export class DeckdeckgoHighlightCode {
   @Element() el: HTMLElement;
 
-  @Event() private prismLanguageLoaded: EventEmitter<string>;
-  @Event() private codeDidChange: EventEmitter<HTMLElement>;
+  /**
+   * Emitted when a language is fetched and loaded
+   */
+  @Event()
+  prismLanguageLoaded: EventEmitter<string>;
 
+  /**
+   * Emitted when the code was edited (see attribute editable). Propagate the root component itself
+   */
+  @Event()
+  codeDidChange: EventEmitter<HTMLElement>;
+
+  /**
+   * The web url to the source code you would like to showcase
+   */
   @Prop() src: string;
 
+  /**
+   * The anchor identifier which will be use to find the next anchor to scroll too using findNextAnchor()
+   */
   @Prop() anchor: string = '// DeckDeckGo';
+  /**
+   * The anchor identifier which will be use to find the next anchor to zoom inside your code using findNextAnchor()
+   */
   @Prop() anchorZoom: string = '// DeckDeckGoZoom';
+  /**
+   * Set this attribute to false in case you would like to actually display the anchor value too
+   */
   @Prop() hideAnchor: boolean = true;
 
+  /**
+   * Define the language to be used for the syntax highlighting. The list of supported languages is defined by Prism.js
+   */
   @Prop({reflect: true}) language: string = 'javascript';
 
+  /**
+   * If you wish to highlight some lines of your code. The lines number should be provided as a number (one line) or number separated with coma (many lines), group separated with space. For example: 1 3,5 8 14,17
+   */
   @Prop({reflect: true}) highlightLines: string;
+  /**
+   * Display the number of the lines of code
+   */
   @Prop({reflect: true}) lineNumbers: boolean = false;
 
+  /**
+   * Present the code in a stylish "windowed" card
+   */
   @Prop({reflect: true}) terminal: DeckdeckgoHighlightCodeTerminal = DeckdeckgoHighlightCodeTerminal.CARBON;
 
+  /**
+   * In case you would like to set the code component as being editable
+   */
   @Prop() editable: boolean = false;
 
+  /**
+   * The theme of the selected terminal (applied only in case of carbon)
+   */
   @Prop({reflect: true}) theme: DeckdeckgoHighlightCodeCarbonTheme = DeckdeckgoHighlightCodeCarbonTheme.DRACULA;
-
-  @State() editing: boolean = false;
 
   private anchorOffsetTop: number = 0;
 
   private fetchOrParseAfterUpdate: boolean = false;
+
+  private refCode!: HTMLElement;
 
   @State()
   private themeStyle: string | undefined;
@@ -56,6 +99,14 @@ export class DeckdeckgoHighlightCode {
 
   @State()
   private loaded: boolean = false;
+
+  private readonly debounceUpdateSlot: () => void;
+
+  constructor() {
+    this.debounceUpdateSlot = debounce(async () => {
+      await this.copyCodeToSlot();
+    }, 500);
+  }
 
   async componentWillLoad() {
     await this.loadGoogleFonts();
@@ -249,6 +300,9 @@ export class DeckdeckgoHighlightCode {
     }
   }
 
+  /**
+   * Load or reload the component
+   */
   @Method()
   load(): Promise<void> {
     return new Promise<void>(async (resolve) => {
@@ -277,7 +331,7 @@ export class DeckdeckgoHighlightCode {
     const code: HTMLElement = this.el.querySelector("[slot='code']");
 
     if (code) {
-      return this.parseCode(code.innerText ? code.innerText.trim() : code.innerText);
+      return this.parseCode(code?.innerHTML?.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&'));
     } else {
       return new Promise<void>((resolve) => {
         resolve();
@@ -470,7 +524,7 @@ export class DeckdeckgoHighlightCode {
             const start: number = parseInt(index[0], 0);
             const end: number = parseInt(index[1], 0);
 
-            for (let i = start; i <= end; i++) {
+            for (let i = start; i <= (isNaN(end) ? start : end); i++) {
               results.push(i);
             }
           }
@@ -481,6 +535,10 @@ export class DeckdeckgoHighlightCode {
     });
   }
 
+  /**
+   * Find the next anchor
+   * @param enter
+   */
   @Method()
   findNextAnchor(enter: boolean): Promise<DeckdeckgoHighlightCodeAnchor> {
     return new Promise<DeckdeckgoHighlightCodeAnchor>(async (resolve) => {
@@ -522,6 +580,10 @@ export class DeckdeckgoHighlightCode {
     });
   }
 
+  /**
+   * Zoom into code
+   * @param zoom
+   */
   @Method()
   zoomCode(zoom: boolean): Promise<void> {
     return new Promise<void>((resolve) => {
@@ -539,91 +601,52 @@ export class DeckdeckgoHighlightCode {
     return line && this.anchorZoom && line.indexOf('@Prop') === -1 && line.split(' ').join('').indexOf(this.anchorZoom.split(' ').join('')) > -1;
   }
 
-  private edit(): Promise<void> {
-    return new Promise<void>((resolve) => {
-      if (!this.editable) {
-        resolve();
-        return;
-      }
+  private async applyCode() {
+    if (!this.editable) {
+      return;
+    }
 
-      this.editing = true;
+    await this.copyCodeToSlot();
 
-      const slottedCode: HTMLElement = this.el.querySelector("[slot='code']");
+    await this.parseSlottedCode();
 
-      if (slottedCode) {
-        setTimeout(() => {
-          slottedCode.setAttribute('contentEditable', 'true');
-          slottedCode.addEventListener('blur', this.applyCode, {once: true});
-          slottedCode.addEventListener('keydown', this.catchNewLine);
-
-          slottedCode.focus();
-        }, 100);
-      }
-
-      resolve();
-    });
+    this.codeDidChange.emit(this.el);
   }
 
-  private catchNewLine = async ($event: KeyboardEvent) => {
-    if ($event && $event.key === 'Enter') {
+  private inputCode() {
+    if (!this.editable) {
+      return;
+    }
+
+    this.debounceUpdateSlot();
+  }
+
+  private async copyCodeToSlot() {
+    const code: HTMLElement | null = this.el.querySelector("[slot='code']");
+
+    if (code) {
+      code.innerHTML = this.refCode?.innerText?.replace(/(?:\n\n)/g, '\n').replace(/\u200B/g, '');
+    }
+  }
+
+  private edit() {
+    if (!this.editable) {
+      return;
+    }
+
+    this.refCode?.focus();
+  }
+
+  private catchTab = async ($event: KeyboardEvent) => {
+    if ($event && $event.key === 'Tab') {
       $event.preventDefault();
 
-      const selection: Selection = await this.getSelection();
-      if (selection && selection.focusNode && selection.focusNode.textContent && selection.focusOffset > 0) {
-        const charCode: number = selection.focusNode.textContent.charCodeAt(window.getSelection().focusOffset);
-
-        document.execCommand('insertHTML', false, charCode === 10 || charCode === 13 ? '\n' : '\n\n');
-      } else {
-        document.execCommand('insertHTML', false, '\n\n');
-      }
+      document.execCommand('insertHTML', false, '&#009');
     }
   };
 
-  private getSelection(): Promise<Selection> {
-    return new Promise<Selection>((resolve) => {
-      let selectedSelection: Selection = null;
-
-      if (window && window.getSelection) {
-        selectedSelection = window.getSelection();
-      } else if (document && document.getSelection) {
-        selectedSelection = document.getSelection();
-      } else if (document && (document as any).selection) {
-        selectedSelection = (document as any).selection.createRange().text;
-      }
-
-      resolve(selectedSelection);
-    });
-  }
-
-  private applyCode = async () => {
-    await this.stopEditing();
-
-    await this.parseSlottedCode();
-  };
-
-  private stopEditing(): Promise<void> {
-    return new Promise<void>((resolve) => {
-      this.editing = false;
-
-      const slottedCode: HTMLElement = this.el.querySelector("[slot='code']");
-
-      if (slottedCode) {
-        slottedCode.removeAttribute('contentEditable');
-
-        if (slottedCode.innerHTML) {
-          slottedCode.innerHTML = slottedCode.innerHTML.trim();
-        }
-
-        this.codeDidChange.emit(this.el);
-      }
-
-      resolve();
-    });
-  }
-
   render() {
     const hostClass = {
-      'deckgo-highlight-code-edit': this.editing,
       'deckgo-highlight-code-carbon': this.terminal === DeckdeckgoHighlightCodeTerminal.CARBON,
       'deckgo-highlight-code-ubuntu': this.terminal === DeckdeckgoHighlightCodeTerminal.UBUNTU,
     };
@@ -633,11 +656,16 @@ export class DeckdeckgoHighlightCode {
     }
 
     return (
-      <Host class={hostClass}>
+      <Host class={hostClass} onClick={() => this.edit()}>
         {this.renderCarbon()}
         {this.renderUbuntu()}
-        <div class="deckgo-highlight-code-container" onMouseDown={() => this.edit()} onTouchStart={() => this.edit()}>
-          <code></code>
+        <div class="deckgo-highlight-code-container">
+          <code
+            contentEditable={this.editable}
+            onBlur={async () => await this.applyCode()}
+            onInput={() => this.inputCode()}
+            onKeyDown={($event: KeyboardEvent) => this.catchTab($event)}
+            ref={(el: HTMLElement | null) => (this.refCode = el as HTMLElement)}></code>
           <slot name="code"></slot>
         </div>
       </Host>

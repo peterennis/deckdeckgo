@@ -1,6 +1,7 @@
 import {Component, Element, h} from '@stencil/core';
 
 import navStore, {NavDirection} from '../../../stores/nav.store';
+import i18n from '../../../stores/i18n.store';
 
 import {AuthService} from '../../../services/auth/auth.service';
 import {ImageHistoryService} from '../../../services/editor/image-history/image-history.service';
@@ -37,15 +38,6 @@ export class AppUserMenu {
     await (this.el.closest('ion-popover') as HTMLIonPopoverElement).dismiss();
   }
 
-  private async navigateEditor() {
-    navStore.state.nav = {
-      url: '/editor',
-      direction: NavDirection.RELOAD,
-    };
-
-    await this.closePopover();
-  }
-
   render() {
     return [<app-user-info></app-user-info>, <hr />, this.renderActions()];
   }
@@ -53,24 +45,20 @@ export class AppUserMenu {
   private renderActions() {
     return (
       <ion-list>
-        <ion-item onClick={() => this.navigateEditor()}>
-          <ion-label>Write a presentation</ion-label>
-        </ion-item>
-
         <ion-item onClick={() => this.closePopover()}>
           <ion-router-link href="/dashboard" routerDirection="forward">
-            <ion-label>Dashboard</ion-label>
+            <ion-label>{i18n.state.nav.dashboard}</ion-label>
           </ion-router-link>
         </ion-item>
 
         <ion-item onClick={() => this.closePopover()}>
           <ion-router-link href="/profile" routerDirection="forward">
-            <ion-label>Profile</ion-label>
+            <ion-label>{i18n.state.nav.profile}</ion-label>
           </ion-router-link>
         </ion-item>
 
         <ion-item onClick={() => this.signOut()}>
-          <ion-label>Sign out</ion-label>
+          <ion-label>{i18n.state.nav.sign_out}</ion-label>
         </ion-item>
       </ion-list>
     );

@@ -1,6 +1,8 @@
 import {Component, Event, EventEmitter, h, Prop} from '@stencil/core';
 
-import {TargetElement} from '../../../utils/editor/target-element';
+import i18n from '../../../stores/i18n.store';
+
+import {TargetElement} from '../../../types/editor/target-element';
 
 @Component({
   tag: 'app-select-target-element',
@@ -27,9 +29,6 @@ export class AppSelectTargetElement {
   textTarget: boolean = false;
 
   @Prop()
-  background: boolean = false;
-
-  @Prop()
   transition: boolean = false;
 
   @Prop()
@@ -39,7 +38,7 @@ export class AppSelectTargetElement {
   image: boolean = false;
 
   @Prop()
-  shape: boolean = false;
+  wordCloud: boolean = false;
 
   @Event()
   applyTo: EventEmitter<TargetElement>;
@@ -57,6 +56,8 @@ export class AppSelectTargetElement {
       ? TargetElement.IMAGE
       : this.textTarget
       ? TargetElement.TEXT
+      : this.wordCloud
+      ? TargetElement.WORD_CLOUD
       : this.sides
       ? TargetElement.SIDES
       : this.qrCode
@@ -74,6 +75,7 @@ export class AppSelectTargetElement {
         {this.renderCode()}
         {this.renderImage()}
         {this.renderText()}
+        {this.renderWordCloud()}
         {this.renderBackground()}
         {this.renderHeaderFooter()}
         {this.renderTransition()}
@@ -85,7 +87,7 @@ export class AppSelectTargetElement {
     if (this.qrCode) {
       return (
         <ion-segment-button value={TargetElement.QR_CODE} mode="md">
-          <ion-label>QR code</ion-label>
+          <ion-label>{i18n.state.editor.qr_code}</ion-label>
         </ion-segment-button>
       );
     } else {
@@ -97,7 +99,7 @@ export class AppSelectTargetElement {
     if (this.chart) {
       return (
         <ion-segment-button value={TargetElement.CHART} mode="md">
-          <ion-label>Chart</ion-label>
+          <ion-label>{i18n.state.editor.chart}</ion-label>
         </ion-segment-button>
       );
     } else {
@@ -109,7 +111,7 @@ export class AppSelectTargetElement {
     if (this.slide) {
       return (
         <ion-segment-button value={TargetElement.SLIDE} mode="md">
-          <ion-label>Font</ion-label>
+          <ion-label>{i18n.state.editor.text}</ion-label>
         </ion-segment-button>
       );
     } else {
@@ -121,7 +123,19 @@ export class AppSelectTargetElement {
     if (this.textTarget) {
       return (
         <ion-segment-button value={TargetElement.TEXT} mode="md">
-          <ion-label>Font</ion-label>
+          <ion-label>{i18n.state.editor.text}</ion-label>
+        </ion-segment-button>
+      );
+    } else {
+      return undefined;
+    }
+  }
+
+  private renderWordCloud() {
+    if (this.wordCloud) {
+      return (
+        <ion-segment-button value={TargetElement.WORD_CLOUD} mode="md">
+          <ion-label>{i18n.state.editor.text}</ion-label>
         </ion-segment-button>
       );
     } else {
@@ -133,7 +147,7 @@ export class AppSelectTargetElement {
     if (this.headerFooter) {
       return (
         <ion-segment-button value={TargetElement.HEADER_FOOTER} mode="md" class="header-footer">
-          <ion-label>Header &amp; Footer</ion-label>
+          <ion-label>{i18n.state.editor.header_footer}</ion-label>
         </ion-segment-button>
       );
     } else {
@@ -142,22 +156,18 @@ export class AppSelectTargetElement {
   }
 
   private renderBackground() {
-    if (this.background) {
-      return (
-        <ion-segment-button value={TargetElement.BACKGROUND} mode="md">
-          <ion-label>{this.shape ? 'Color' : 'Background'}</ion-label>
-        </ion-segment-button>
-      );
-    } else {
-      return undefined;
-    }
+    return (
+      <ion-segment-button value={TargetElement.BACKGROUND} mode="md">
+        <ion-label>{i18n.state.editor.background}</ion-label>
+      </ion-segment-button>
+    );
   }
 
   private renderCode() {
     if (this.code) {
       return (
         <ion-segment-button value={TargetElement.CODE} mode="md">
-          <ion-label>Code</ion-label>
+          <ion-label>{i18n.state.editor.code}</ion-label>
         </ion-segment-button>
       );
     } else {
@@ -169,7 +179,7 @@ export class AppSelectTargetElement {
     if (this.image) {
       return (
         <ion-segment-button value={TargetElement.IMAGE} mode="md">
-          <ion-label>Image</ion-label>
+          <ion-label>{i18n.state.editor.image}</ion-label>
         </ion-segment-button>
       );
     } else {
@@ -181,7 +191,7 @@ export class AppSelectTargetElement {
     if (this.transition) {
       return (
         <ion-segment-button value={TargetElement.TRANSITION} mode="md">
-          <ion-label>Transition</ion-label>
+          <ion-label>{i18n.state.editor.transition}</ion-label>
         </ion-segment-button>
       );
     } else {
@@ -193,7 +203,7 @@ export class AppSelectTargetElement {
     if (this.sides) {
       return (
         <ion-segment-button value={TargetElement.SIDES} mode="md">
-          <ion-label>Sides</ion-label>
+          <ion-label>{i18n.state.editor.sides}</ion-label>
         </ion-segment-button>
       );
     } else {

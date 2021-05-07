@@ -1,8 +1,11 @@
-import {Component, Element, EventEmitter, h, Prop, State} from '@stencil/core';
+import {Component, Element, EventEmitter, h, Host, Prop, State} from '@stencil/core';
 
-import {TargetElement} from '../../../../utils/editor/target-element';
-import {ImageAction} from '../../../../utils/editor/image-action';
+import i18n from '../../../../stores/i18n.store';
+
+import {TargetElement} from '../../../../types/editor/target-element';
+import {ImageAction} from '../../../../types/editor/image-action';
 import {ImageHelper} from '../../../../helpers/editor/image.helper';
+import settingsStore from '../../../../stores/settings.store';
 
 @Component({
   tag: 'app-deck-style',
@@ -67,20 +70,31 @@ export class AppDeck {
   }
 
   render() {
-    return [
-      <ion-toolbar>
-        <h2>Deck style</h2>
-        <app-close-menu slot="end" onClose={() => this.closePopover()}></app-close-menu>
-      </ion-toolbar>,
-      <app-select-target-element
-        textTarget={true}
-        background={true}
-        transition={true}
-        header-footer={true}
-        onApplyTo={($event: CustomEvent<TargetElement>) => this.selectApplyToTargetElement($event)}></app-select-target-element>,
+    return (
+      <Host edit-mode={settingsStore.state.editMode}>
+        <ion-toolbar>
+          <h2>{i18n.state.editor.deck_style}</h2>
+          <app-close-menu slot="end" onClose={() => this.closePopover()}></app-close-menu>
+        </ion-toolbar>
+        <app-select-target-element
+          textTarget={true}
+          transition={true}
+          header-footer={true}
+          onApplyTo={($event: CustomEvent<TargetElement>) => this.selectApplyToTargetElement($event)}></app-select-target-element>
 
-      this.renderOptions(),
-    ];
+        {this.renderOptions()}
+
+        {this.renderEditMode()}
+      </Host>
+    );
+  }
+
+  private renderEditMode() {
+    if ([TargetElement.TEXT, TargetElement.BACKGROUND].includes(this.applyToTargetElement)) {
+      return <app-edit-mode></app-edit-mode>;
+    }
+
+    return undefined;
   }
 
   private renderOptions() {
@@ -92,7 +106,6 @@ export class AppDeck {
           colorType={'background'}
           selectedElement={this.deckElement}
           deck={true}
-          expanded={false}
           onColorChange={() => this.onDeckChange()}></app-color-text-background>,
         <app-image selectedElement={this.deckElement} deck={true} onAction={($event: CustomEvent<ImageAction>) => this.onImageAction($event)}></app-image>,
       ];

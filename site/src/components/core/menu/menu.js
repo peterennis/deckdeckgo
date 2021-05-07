@@ -3,7 +3,8 @@ import {Link} from 'gatsby';
 
 import {FormattedMessage} from 'react-intl';
 
-import styles from './menu.module.scss';
+import {menu, open as openStyle} from './menu.module.scss';
+
 import {Links} from '../links/links';
 
 export const Menu = forwardRef(({lang}, ref) => {
@@ -24,14 +25,33 @@ export const Menu = forwardRef(({lang}, ref) => {
   };
 
   return (
-    <div role="button" tabIndex="0" className={`${styles.menu} ${open ? `${styles.open}` : ''}`} onClick={() => hide()} onKeyDown={() => hide()}>
+    <div role="button" tabIndex="0" className={`${menu} ${open ? `${openStyle}` : ''}`} onClick={() => hide()} onKeyDown={() => hide()}>
+      <img
+        loading="lazy"
+        src="/assets/icons/ionicons/close.svg"
+        aria-hidden="true"
+        alt=""
+        style={{width: '3rem', padding: '0.45rem', position: 'fixed', top: '0', left: '0', margin: '15px 0 0 20px'}}
+      />
       <Link to={`/${lang}/`}>
         <h2>DeckDeckGo</h2>
+      </Link>
+
+      <Link to={`/${lang}/features`}>
+        <h2>
+          <FormattedMessage id="nav.features" />
+        </h2>
       </Link>
 
       <Link to={`/${lang}/discover`}>
         <h2>
           <FormattedMessage id="nav.discover" />
+        </h2>
+      </Link>
+
+      <Link to={`/${lang}/pricing`}>
+        <h2>
+          <FormattedMessage id="nav.pricing" />
         </h2>
       </Link>
 

@@ -11,7 +11,11 @@ import {AnchorLink, ExecCommandAction, InlineAction} from '../../interfaces/inte
 
 import {DeckdeckgoInlineEditorUtils} from '../../utils/utils';
 import {execCommand} from '../../utils/execcommand.utils';
+import {clearTheSelection, getSelection} from '../../utils/selection.utils';
 
+/**
+ * @slot - related to the customActions propery
+ */
 @Component({
   tag: 'deckgo-inline-editor',
   styleUrl: 'deckdeckgo-inline-editor.scss',
@@ -20,6 +24,9 @@ import {execCommand} from '../../utils/execcommand.utils';
 export class DeckdeckgoInlineEditor {
   @Element() el: HTMLElement;
 
+  /**
+   * In case you would like to define a custom list of colors for the palette of colors. See @deckdeckgo/color for the default list of colors
+   */
   @Prop() palette: DeckdeckgoPalette[] = DEFAULT_PALETTE;
 
   @State()
@@ -46,12 +53,21 @@ export class DeckdeckgoInlineEditor {
   @State()
   private disabledTitle: boolean = false;
 
+  /**
+   * The mobile mode is automatically recognize, but just it case you would like to "force" it
+   */
   @Prop({mutable: true})
   mobile: boolean = false;
 
+  /**
+   * Use a sticky footer toolbar on desktop
+   */
   @Prop()
   stickyDesktop: boolean = false;
 
+  /**
+   * Use a sticky footer toolbar on mobile. The sticky bar is positioned bottom except on iOS for which it will be positioned top
+   */
   @Prop()
   stickyMobile: boolean = false;
 
@@ -76,47 +92,95 @@ export class DeckdeckgoInlineEditor {
 
   @Event() stickyToolbarActivated: EventEmitter<boolean>;
 
+  /**
+   * Could be use to attach the inline editor event listeners (mousedown, touchstart and keydown) to a specific element instead of the document
+   */
   @Prop()
   attachTo: HTMLElement;
 
+  /**
+   * A comma separated list of containers where the inline editor should/could be use. Used in order to allow the component to detect some information like the current style or color
+   */
   @Prop()
   containers: string = 'h1,h2,h3,h4,h5,h6,div';
 
-  @Event() private imgDidChange: EventEmitter<HTMLElement>;
+  /**
+   * Triggered when an image is manipulated. Note: the event won't provide directly the image but rather its container element
+   */
+  @Event()
+  imgDidChange: EventEmitter<HTMLElement>;
 
-  @Event() private linkCreated: EventEmitter<HTMLElement>;
+  /**
+   * Triggered when a link is created by the user. The event detail is the container
+   */
+  @Event()
+  linkCreated: EventEmitter<HTMLElement>;
 
-  @Event() private styleDidChange: EventEmitter<HTMLElement>;
+  /**
+   * Triggered when the style is modified (bold, italic, color, alignment, etc.). The event detail is the container
+   */
+  @Event()
+  styleDidChange: EventEmitter<HTMLElement>;
 
+  /**
+   * The type of element to attach the image toolbar
+   */
   @Prop()
   imgAnchor: string = 'img';
 
+  /**
+   * In case you would like to use a specific property to specify the width on your image
+   */
   @Prop()
   imgPropertyWidth: string = 'width';
 
+  /**
+   * In case you would like to use a specific property to specify the float on your image
+   */
   @Prop()
   imgPropertyCssFloat: string = 'float';
 
   private iOSTimerScroll: number;
 
+  /**
+   * Per default, the component will not consider images as editable. Turn this option to true to activate the edition of images
+   */
   @Prop()
   imgEditable: boolean = false;
 
+  /**
+   * Actions to manipulate the selection as list enabled?
+   */
   @Prop()
   list: boolean = true;
 
+  /**
+   * Actions to manipulat
+   */
   @Prop()
   align: boolean = true;
 
+  /**
+   * Actions to modify the selection font-size enabled?
+   */
   @Prop()
   fontSize: boolean = true;
 
+  /**
+   * To hide the option to select a background-color
+   */
   @Prop()
   backgroundColor: boolean = true;
 
+  /**
+   * You might to display and add further actions to the component ? Use this property to provide a comma separated list of actions
+   */
   @Prop()
   customActions: string; // Comma separated list of additional action components
 
+  /**
+   * Triggered when a custom action is selected. Its detail provide an action name, the Selection and an anchorLink
+   */
   @Event()
   customAction: EventEmitter<InlineAction>;
 
@@ -297,7 +361,7 @@ export class DeckdeckgoInlineEditor {
 
   private displayTools(): Promise<void> {
     return new Promise<void>(async (resolve) => {
-      const selection: Selection = await this.getSelection();
+      const selection: Selection | undefined = await getSelection();
 
       if (!this.anchorEvent) {
         await this.reset(false);
@@ -562,43 +626,16 @@ export class DeckdeckgoInlineEditor {
     });
   }
 
-  private getSelection(): Promise<Selection> {
-    return new Promise<Selection>((resolve) => {
-      let selectedSelection: Selection = null;
-
-      if (window && window.getSelection) {
-        selectedSelection = window.getSelection();
-      } else if (document && document.getSelection) {
-        selectedSelection = document.getSelection();
-      } else if (document && (document as any).selection) {
-        selectedSelection = (document as any).selection.createRange().text;
-      }
-
-      resolve(selectedSelection);
-    });
-  }
-
-  private clearTheSelection(): Promise<Selection> {
-    return new Promise<Selection>((resolve) => {
-      if (window && window.getSelection) {
-        if (window.getSelection().empty) {
-          window.getSelection().empty();
-        } else if (window.getSelection().removeAllRanges) {
-          window.getSelection().removeAllRanges();
-        }
-      } else if (document && (document as any).selection) {
-        (document as any).selection.empty();
-      }
-
-      resolve();
-    });
-  }
-
+  /**
+   * Reset the inline editor (= hide it) and optionally clear its selection.
+   * @param clearSelection
+   * @param blurActiveElement
+   */
   @Method()
   reset(clearSelection: boolean, blurActiveElement?: boolean): Promise<void> {
     return new Promise<void>(async (resolve) => {
       if (clearSelection) {
-        await this.clearTheSelection();
+        await clearTheSelection();
       }
 
       await this.setToolsActivated(false);
@@ -741,8 +778,6 @@ export class DeckdeckgoInlineEditor {
       !this.selection ? document.activeElement : this.selection.anchorNode
     );
     this.styleDidChange.emit(container);
-
-    await this.reset(true);
   }
 
   render() {
@@ -791,6 +826,7 @@ export class DeckdeckgoInlineEditor {
           action={this.toolbarActions === ToolbarActions.BACKGROUND_COLOR ? 'background-color' : 'color'}
           palette={this.palette}
           mobile={this.mobile}
+          containers={this.containers}
           onExecCommand={($event: CustomEvent<ExecCommandAction>) => this.onExecCommand($event)}></deckgo-ie-color-actions>
       );
     } else if (this.toolbarActions === ToolbarActions.IMAGE) {

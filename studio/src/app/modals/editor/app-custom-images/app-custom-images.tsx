@@ -1,13 +1,15 @@
 import {Component, Element, Listen, State, h} from '@stencil/core';
 
-import {Resources} from '../../../utils/core/resources';
+import i18n from '../../../stores/i18n.store';
+
+import {Constants} from '../../../types/core/constants';
 
 import {ImageHistoryService} from '../../../services/editor/image-history/image-history.service';
 import {StorageService} from '../../../services/storage/storage.service';
 
 @Component({
   tag: 'app-custom-images',
-  styleUrl: 'app-custom-images.scss'
+  styleUrl: 'app-custom-images.scss',
 })
 export class AppCustomImages {
   @Element() el: HTMLElement;
@@ -32,6 +34,9 @@ export class AppCustomImages {
 
   @State()
   private loading: boolean = true;
+
+  @State()
+  private folder: string = 'images';
 
   constructor() {
     this.imageHistoryService = ImageHistoryService.getInstance();
@@ -83,9 +88,9 @@ export class AppCustomImages {
     });
   }
 
-  private search(): Promise<void> {
+  private search(reset: boolean = false): Promise<void> {
     return new Promise<void>(async (resolve) => {
-      const list: StorageFilesList = await this.storageService.getFiles(this.paginationNext, 'images');
+      const list: StorageFilesList = await this.storageService.getFiles(this.paginationNext, this.folder);
 
       if (!list) {
         resolve();
@@ -101,11 +106,11 @@ export class AppCustomImages {
         return;
       }
 
-      if (!this.imagesOdd) {
+      if (!this.imagesOdd || reset) {
         this.imagesOdd = [];
       }
 
-      if (!this.imagesEven) {
+      if (!this.imagesEven || reset) {
         this.imagesEven = [];
       }
 
@@ -114,7 +119,7 @@ export class AppCustomImages {
 
       this.paginationNext = list.nextPageToken;
 
-      this.disableInfiniteScroll = list.items.length < Resources.Constants.STORAGE.MAX_QUERY_RESULTS || this.paginationNext === undefined;
+      this.disableInfiniteScroll = list.items.length < Constants.STORAGE.MAX_QUERY_RESULTS || this.paginationNext === undefined;
 
       this.loading = false;
 
@@ -175,19 +180,28 @@ export class AppCustomImages {
     });
   }
 
+  private async openFolder($event: CustomEvent<string>) {
+    this.loading = true;
+    this.folder = $event.detail;
+
+    await this.search(true);
+  }
+
   render() {
     return [
       <ion-header>
         <ion-toolbar color="tertiary">
           <ion-buttons slot="start">
-            <ion-button onClick={() => this.closeModal()}>
-              <ion-icon aria-label="Close" src="/assets/icons/ionicons/close.svg"></ion-icon>
+            <ion-button onClick={() => this.closeModal()} aria-label={i18n.state.core.close}>
+              <ion-icon src="/assets/icons/ionicons/close.svg"></ion-icon>
             </ion-button>
           </ion-buttons>
-          <ion-title class="ion-text-uppercase">Your images</ion-title>
+          <ion-title class="ion-text-uppercase">{i18n.state.editor.your_images}</ion-title>
         </ion-toolbar>
       </ion-header>,
       <ion-content class="ion-padding">
+        <app-background-folders onSelectFolder={($event: CustomEvent<string>) => this.openFolder($event)}></app-background-folders>
+
         <app-image-columns
           imagesOdd={this.imagesOdd}
           imagesEven={this.imagesEven}
@@ -195,17 +209,17 @@ export class AppCustomImages {
 
         {this.renderImagesPlaceHolder()}
 
-        <input type="file" accept="image/x-png,image/jpeg,image/gif" onChange={() => this.upload()} />
+        <input type="file" accept="image/x-png,image/jpeg,image/gif,image/svg+xml,image/webp" onChange={() => this.upload()} />
 
         <ion-infinite-scroll threshold="100px" disabled={this.disableInfiniteScroll} onIonInfinite={(e: CustomEvent<void>) => this.searchNext(e)}>
-          <ion-infinite-scroll-content loadingText="Loading more images..."></ion-infinite-scroll-content>
+          <ion-infinite-scroll-content loadingText={i18n.state.core.loading}></ion-infinite-scroll-content>
         </ion-infinite-scroll>
       </ion-content>,
       <ion-footer>
         <ion-toolbar>
           <div class={this.uploading ? 'uploading' : undefined}>{this.renderToolbarAction()}</div>
         </ion-toolbar>
-      </ion-footer>
+      </ion-footer>,
     ];
   }
 
@@ -219,7 +233,7 @@ export class AppCustomImages {
         <div class="placeholder">
           <div>
             <ion-icon name="images"></ion-icon>
-            <ion-label class="ion-text-center">Your collection of images is empty</ion-label>
+            <ion-label class="ion-text-center">{i18n.state.editor.your_collection_empty}</ion-label>
           </div>
         </div>
       );
@@ -231,13 +245,13 @@ export class AppCustomImages {
   private renderToolbarAction() {
     if (!this.uploading) {
       return (
-        <ion-button onClick={() => this.openFilePicker()} shape="round" color="tertiary">
+        <ion-button onClick={() => this.openFilePicker()} shape="round" color="tertiary" disabled={this.folder !== 'images'}>
           <ion-icon name="cloud-upload" slot="start"></ion-icon>
-          <ion-label>Upload a new image</ion-label>
+          <ion-label>{i18n.state.editor.upload_image}</ion-label>
         </ion-button>
       );
     } else {
-      return [<ion-spinner color="tertiary"></ion-spinner>, <ion-label class="ion-padding-start">Upload in progress</ion-label>];
+      return [<ion-spinner color="tertiary"></ion-spinner>, <ion-label class="ion-padding-start">{i18n.state.core.in_progress}</ion-label>];
     }
   }
 }

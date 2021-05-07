@@ -2,10 +2,12 @@ import {Component, Element, EventEmitter, h, Prop, State, Event} from '@stencil/
 
 import {alertController} from '@ionic/core';
 
+import i18n from '../../../../stores/i18n.store';
+
 import store from '../../../../stores/deck.store';
 
 import {QRCodeUtils} from '../../../../utils/editor/qrcode.utils';
-import {EditAction} from '../../../../utils/editor/edit-action';
+import {EditAction} from '../../../../types/editor/edit-action';
 
 @Component({
   tag: 'app-edit-slide-qrcode',
@@ -81,10 +83,10 @@ export class AppEditSlideQRCode {
         // https://stackoverflow.com/a/14582229/5404186
         const pattern: RegExp = new RegExp(
           '^(https?:\\/\\/)?' + // protocol
-          '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.?)+[a-z]{2,}|' + // domain name
-          '((\\d{1,3}\\.){3}\\d{1,3}))' + // OR ip (v4) address
-          '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // port and path
-          '(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
+            '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.?)+[a-z]{2,}|' + // domain name
+            '((\\d{1,3}\\.){3}\\d{1,3}))' + // OR ip (v4) address
+            '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // port and path
+            '(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
             '(\\#[-a-z\\d_]*)?$',
           'i'
         ); // fragment locator
@@ -122,7 +124,7 @@ export class AppEditSlideQRCode {
   // prettier-ignore
   private async presentQRCodeInfo() {
     const alert: HTMLIonAlertElement = await alertController.create({
-      message: 'The QR codes you add to your presentations are by default linked with the homepage.<br/><br/>As soon as you share them, their content will automatically be updated with their online urls.<br/><br/>Alternatively, you could also provide a custom url for their content.',
+      message: i18n.state.editor.qr_code_explanation,
       buttons: ['Ok']
     });
 
@@ -133,18 +135,18 @@ export class AppEditSlideQRCode {
     return [
       <ion-radio-group onIonChange={($event) => this.onRadioCustomLink($event)} value={this.customQRCode}>
         <ion-item-divider class="ion-padding-top">
-          <ion-label>Target</ion-label>
+          <ion-label>{i18n.state.editor.target}</ion-label>
           <button slot="end" class="info" onClick={() => this.presentQRCodeInfo()}>
             <ion-icon name="help"></ion-icon>
           </button>
         </ion-item-divider>
 
         <ion-item>
-          <ion-label>Your presentation</ion-label>
+          <ion-label>{i18n.state.editor.your_presentation}</ion-label>
           <ion-radio slot="start" value={false} mode="md"></ion-radio>
         </ion-item>
         <ion-item>
-          <ion-label>A custom url</ion-label>
+          <ion-label>{i18n.state.editor.custom_url}</ion-label>
           <ion-radio slot="start" value={true} mode="md"></ion-radio>
         </ion-item>
       </ion-radio-group>,
@@ -161,13 +163,13 @@ export class AppEditSlideQRCode {
 
       <ion-item class="action-button ion-margin-top">
         <ion-button shape="round" onClick={() => this.action.emit(EditAction.OPEN_CUSTOM_LOGO)} color="tertiary">
-          <ion-label>Your logo</ion-label>
+          <ion-label>{i18n.state.editor.your_logo}</ion-label>
         </ion-button>
       </ion-item>,
 
       <ion-item class="action-button ion-margin-bottom">
         <ion-button shape="round" onClick={() => this.action.emit(EditAction.DELETE_LOGO)} fill="outline" class="delete">
-          <ion-label>Delete logo</ion-label>
+          <ion-label>{i18n.state.editor.delete_logo}</ion-label>
         </ion-button>
       </ion-item>,
     ];

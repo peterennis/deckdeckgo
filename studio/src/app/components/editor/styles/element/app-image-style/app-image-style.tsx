@@ -1,5 +1,14 @@
 import {Component, Element, Prop, State, h, EventEmitter, Event} from '@stencil/core';
 
+import {isSlide} from '@deckdeckgo/deck-utils';
+
+import settingsStore from '../../../../../stores/settings.store';
+import i18n from '../../../../../stores/i18n.store';
+
+import {EditMode, Expanded} from '../../../../../types/core/settings';
+
+import {SettingsUtils} from '../../../../../utils/core/settings.utils';
+
 enum ImageSize {
   SMALL = '25%',
   MEDIUM = '50%',
@@ -30,9 +39,38 @@ export class AppImageStyle {
   @State()
   private currentImageAlignment: ImageAlignment;
 
+  @State()
+  private imageHeightCSS: string;
+
+  @State()
+  private imageJustifyContentCSS: string;
+
+  private destroyListener;
+
   async componentWillLoad() {
     this.currentImageSize = await this.initImageSize();
     this.currentImageAlignment = await this.initImageAlignment();
+
+    this.destroyListener = settingsStore.onChange('editMode', async (edit: EditMode) => {
+      if (edit === 'css') {
+        await this.initCSS();
+        return;
+      }
+
+      this.currentImageSize = await this.initImageSize();
+      this.currentImageAlignment = await this.initImageAlignment();
+    });
+  }
+
+  disconnectedCallback() {
+    if (this.destroyListener) {
+      this.destroyListener();
+    }
+  }
+
+  private async initCSS() {
+    this.imageHeightCSS = this.selectedElement.style.getPropertyValue('--deckgo-lazy-img-height');
+    this.imageJustifyContentCSS = this.selectedElement.style.getPropertyValue('justify-content');
   }
 
   private initImageSize(): Promise<ImageSize> {
@@ -78,7 +116,7 @@ export class AppImageStyle {
     return new Promise<ImageAlignment>((resolve) => {
       const parent: HTMLElement = this.selectedElement.parentElement;
 
-      if (parent.nodeName?.toLowerCase().indexOf('deckgo-slide') > -1) {
+      if (isSlide(parent)) {
         const container: HTMLElement = parent.shadowRoot.querySelector('.deckgo-slide');
         if (container) {
           const style: CSSStyleDeclaration = window.getComputedStyle(container);
@@ -143,23 +181,53 @@ export class AppImageStyle {
     });
   }
 
+  private handleImageHeightInput($event: CustomEvent<KeyboardEvent>) {
+    this.imageHeightCSS = ($event.target as InputTargetEvent).value;
+  }
+
+  private async updateImageHeightCSS() {
+    if (!this.imageHeightCSS || this.imageHeightCSS === '') {
+      this.selectedElement.style.removeProperty('--deckgo-lazy-img-height');
+    } else {
+      this.selectedElement.style.setProperty('--deckgo-lazy-img-height', this.imageHeightCSS);
+    }
+
+    this.imgDidChange.emit(this.selectedElement);
+  }
+
+  private handleImageJustifyContentInput($event: CustomEvent<KeyboardEvent>) {
+    this.imageJustifyContentCSS = ($event.target as InputTargetEvent).value;
+  }
+
+  private async updateImageJustifyContentCSS() {
+    this.selectedElement.style.setProperty('display', 'inline-flex');
+    this.selectedElement.style.setProperty('justify-content', this.imageJustifyContentCSS);
+
+    this.imgDidChange.emit(this.selectedElement);
+  }
+
   render() {
     return (
-      <ion-list>
-        {this.renderImageSize()}
-        {this.renderImageAlignment()}
-      </ion-list>
+      <app-expansion-panel
+        expanded={settingsStore.state.panels.imageStyle}
+        onExpansion={($event: CustomEvent<Expanded>) => SettingsUtils.update({imageStyle: $event.detail})}>
+        <ion-label slot="title">{i18n.state.editor.image}</ion-label>
+        <ion-list>
+          {this.renderImageSize()}
+          {this.renderImageAlignment()}
+        </ion-list>
+      </app-expansion-panel>
     );
   }
 
   private renderImageSize() {
     return [
       <ion-item-divider class="ion-padding-top">
-        <ion-label>Size</ion-label>
+        <ion-label>{i18n.state.editor.size}</ion-label>
       </ion-item-divider>,
 
-      <ion-item class="select">
-        <ion-label>Size</ion-label>
+      <ion-item class="select properties">
+        <ion-label>{i18n.state.editor.size}</ion-label>
 
         <ion-select
           value={this.currentImageSize}
@@ -168,11 +236,20 @@ export class AppImageStyle {
           interface="popover"
           mode="md"
           class="ion-padding-start ion-padding-end">
-          <ion-select-option value={ImageSize.SMALL}>Small</ion-select-option>
-          <ion-select-option value={ImageSize.MEDIUM}>Medium</ion-select-option>
-          <ion-select-option value={ImageSize.LARGE}>Large</ion-select-option>
-          <ion-select-option value={ImageSize.ORIGINAL}>Original</ion-select-option>
+          <ion-select-option value={ImageSize.SMALL}>{i18n.state.editor.small}</ion-select-option>
+          <ion-select-option value={ImageSize.MEDIUM}>{i18n.state.editor.medium}</ion-select-option>
+          <ion-select-option value={ImageSize.LARGE}>{i18n.state.editor.large}</ion-select-option>
+          <ion-select-option value={ImageSize.ORIGINAL}>{i18n.state.editor.original}</ion-select-option>
         </ion-select>
+      </ion-item>,
+
+      <ion-item class="with-padding css">
+        <ion-input
+          value={this.imageHeightCSS}
+          placeholder="height"
+          debounce={500}
+          onIonInput={(e: CustomEvent<KeyboardEvent>) => this.handleImageHeightInput(e)}
+          onIonChange={async () => await this.updateImageHeightCSS()}></ion-input>
       </ion-item>,
     ];
   }
@@ -180,11 +257,11 @@ export class AppImageStyle {
   private renderImageAlignment() {
     return [
       <ion-item-divider class="ion-padding-top">
-        <ion-label>Alignment</ion-label>
+        <ion-label>{i18n.state.editor.alignment}</ion-label>
       </ion-item-divider>,
 
-      <ion-item class="select">
-        <ion-label>Alignment</ion-label>
+      <ion-item class="select properties">
+        <ion-label>{i18n.state.editor.alignment}</ion-label>
 
         <ion-select
           value={this.currentImageAlignment}
@@ -193,10 +270,19 @@ export class AppImageStyle {
           interface="popover"
           mode="md"
           class="ion-padding-start ion-padding-end">
-          <ion-select-option value={ImageAlignment.START}>Start</ion-select-option>
-          <ion-select-option value={ImageAlignment.CENTER}>Center</ion-select-option>
-          <ion-select-option value={ImageAlignment.END}>End</ion-select-option>
+          <ion-select-option value={ImageAlignment.START}>{i18n.state.editor.start}</ion-select-option>
+          <ion-select-option value={ImageAlignment.CENTER}>{i18n.state.editor.center}</ion-select-option>
+          <ion-select-option value={ImageAlignment.END}>{i18n.state.editor.end}</ion-select-option>
         </ion-select>
+      </ion-item>,
+
+      <ion-item class="with-padding css">
+        <ion-input
+          value={this.imageJustifyContentCSS}
+          placeholder="justify-content"
+          debounce={500}
+          onIonInput={(e: CustomEvent<KeyboardEvent>) => this.handleImageJustifyContentInput(e)}
+          onIonChange={async () => await this.updateImageJustifyContentCSS()}></ion-input>
       </ion-item>,
     ];
   }

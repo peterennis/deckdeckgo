@@ -21,7 +21,16 @@
     display: none;
   }
 
-  #navigation {
+  ion-content {
+    cursor: none;
+  }
+
+  #fullscreen-menu {
     display: inherit;
+  }
+
+  button.navigation {
+    background: rgba(var(--ion-color-dark-rgb), 0.4);
+    color: var(--ion-color-dark-contrast);
   }
 }

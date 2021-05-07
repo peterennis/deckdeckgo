@@ -3,14 +3,14 @@ import React, {createRef, useEffect, useRef, useState} from 'react';
 import {FormattedMessage, useIntl} from 'react-intl';
 
 import {graphql, Link, StaticQuery} from 'gatsby';
-import Img from 'gatsby-image';
+import {GatsbyImage} from 'gatsby-plugin-image';
 
-import styles from './navigation.module.scss';
+import {header, dark as darkStyle, end, fix as fixStyle, home, menu, nav, start, tertiary} from './navigation.module.scss';
 
 import {LinkButton} from '../buttons/link-button';
 import {Menu} from '../menu/menu';
 
-const Navigation = ({data, fix, lang, dark}) => {
+const Navigation = ({data, fix, lang, navTheme}) => {
   const intl = useIntl();
 
   const [scrolled, setScrolled] = useState(false);
@@ -44,32 +44,41 @@ const Navigation = ({data, fix, lang, dark}) => {
     menuRef.current.open();
   };
 
+  const theme = navTheme === 'enterprise' ? darkStyle : navTheme === 'features' || navTheme === 'pricing' ? tertiary : '';
+
   return (
     <>
-      <header className={`${styles.header} ` + (fix ? `${styles.fix}` : scrolled ? `${styles.fix} animated` : '') + `${dark ? ` ${styles.dark}` : ''}`}>
-        <nav className={styles.nav}>
-          <button className={styles.menu} aria-label={intl.formatMessage({id: 'nav.menu'})} onClick={() => openMenu()}>
-            <img loading="lazy" src={`/assets/icons/ionicons/menu${dark ? '-dark' : ''}.svg`} aria-hidden="true" alt="" style={{width: '2rem'}} />
+      <header className={`${header} ` + (fix ? `${fixStyle}` : scrolled ? `${fixStyle} animated` : '') + `${theme}`}>
+        <nav className={nav}>
+          <button className={menu} aria-label={intl.formatMessage({id: 'nav.menu'})} onClick={() => openMenu()}>
+            <img loading="lazy" src={`/assets/icons/ionicons/menu${navTheme ? '-dark' : ''}.svg`} aria-hidden="true" alt="" style={{width: '2rem'}} />
           </button>
 
-          <div className={styles.start}>
+          <div className={start}>
             {renderDeckDeckGo()}
+
+            <Link to={`/${lang}/features`}>
+              <FormattedMessage id="nav.features" />
+            </Link>
 
             <Link to={`/${lang}/discover`}>
               <FormattedMessage id="nav.discover" />
             </Link>
 
-            <Link to={`/${lang}/enterprise`}>
-              <FormattedMessage id="nav.enterprise" />
+            <Link to={`/${lang}/pricing`}>
+              <FormattedMessage id="nav.pricing" />
             </Link>
           </div>
 
-          <div className={styles.end}>
+          <div className={end}>
             <a href="https://app.deckdeckgo.com/signin" rel="noopener noreferrer">
               <FormattedMessage id="nav.signin" />
             </a>
 
-            <LinkButton targetUrl="https://app.deckdeckgo.com/editor" msgId="nav.write.presentation" color="primary"></LinkButton>
+            <LinkButton
+              targetUrl="https://app.deckdeckgo.com/editor"
+              msgId="nav.write.presentation"
+              color={(navTheme === 'features' || navTheme === 'pricing') && !scrolled ? 'light' : 'primary'}></LinkButton>
           </div>
         </nav>
       </header>
@@ -80,8 +89,8 @@ const Navigation = ({data, fix, lang, dark}) => {
 
   function renderDeckDeckGo() {
     return (
-      <Link to={`/${lang}/`} className={styles.home}>
-        <Img fluid={data.placeholderImage.childImageSharp.fluid} />
+      <Link to={`/${lang}/`} className={home}>
+        <GatsbyImage image={data.placeholderImage.childImageSharp.gatsbyImageData} alt="" />
 
         <span style={{margin: 0}}>{data.site.siteMetadata.title}</span>
       </Link>
@@ -89,15 +98,13 @@ const Navigation = ({data, fix, lang, dark}) => {
   }
 };
 
-export default (props) => (
+const LayoutQuery = (props) => (
   <StaticQuery
     query={graphql`
       query {
         placeholderImage: file(relativePath: {eq: "icon-192x192.png"}) {
           childImageSharp {
-            fluid(maxWidth: 48) {
-              ...GatsbyImageSharpFluid
-            }
+            gatsbyImageData(width: 48, placeholder: BLURRED)
           }
         }
         site {
@@ -110,3 +117,5 @@ export default (props) => (
     render={(data) => <Navigation data={data} {...props} />}
   />
 );
+
+export default LayoutQuery;

@@ -1,21 +1,23 @@
 import {Component, Event, EventEmitter, h, State} from '@stencil/core';
 
 import {debounce} from '@deckdeckgo/utils';
+import {isSlide} from '@deckdeckgo/deck-utils';
 
 import deckStore from '../../../../stores/deck.store';
 import errorStore from '../../../../stores/error.store';
 import apiUserStore from '../../../../stores/api.user.store';
 import authStore from '../../../../stores/auth.store';
-import navStore, {NavDirection} from '../../../../stores/nav.store';
+import i18n from '../../../../stores/i18n.store';
 
 import {Deck} from '../../../../models/data/deck';
 
-import {Resources} from '../../../../utils/core/resources';
+import {Constants} from '../../../../types/core/constants';
 
 import {DeckService} from '../../../../services/data/deck/deck.service';
 import {PublishService} from '../../../../services/editor/publish/publish.service';
 
 import {getPublishedUrl} from '../../../../utils/core/share.utils';
+import {renderI18n} from '../../../../utils/core/i18n.utils';
 
 interface CustomInputEvent extends KeyboardEvent {
   data: string | null;
@@ -33,7 +35,10 @@ export class AppPublishEdit {
   private description: string;
 
   @State()
-  private valid: boolean = true;
+  private validTitle: boolean = true;
+
+  @State()
+  private validDescription: boolean = true;
 
   @State()
   private disablePublish: boolean = false;
@@ -58,8 +63,6 @@ export class AppPublishEdit {
   private readonly debounceUpdateDeck: () => void;
 
   @Event() private published: EventEmitter<string>;
-
-  @Event() private contact: EventEmitter<void>;
 
   private publishService: PublishService;
 
@@ -116,7 +119,7 @@ export class AppPublishEdit {
 
       const slide: HTMLElement = document.querySelector('app-editor main deckgo-deck > *:first-child');
 
-      if (slide?.tagName?.toLowerCase().indexOf('deckgo-slide') > -1) {
+      if (isSlide(slide)) {
         const contentElement: HTMLElement = slide.querySelector('[slot="content"]');
 
         if (contentElement) {
@@ -230,7 +233,7 @@ export class AppPublishEdit {
       let title: string = ($event.target as InputTargetEvent).value;
       if (title && title !== undefined && title !== '') {
         if (!this.validCaption(title)) {
-          title = title.substr(0, Resources.Constants.DECK.TITLE_MAX_LENGTH);
+          title = title.substr(0, Constants.DECK.TITLE_MAX_LENGTH);
         }
       }
 
@@ -243,11 +246,11 @@ export class AppPublishEdit {
   }
 
   private validateCaptionInput() {
-    this.valid = this.validCaption(this.caption);
+    this.validTitle = this.validCaption(this.caption);
   }
 
   private validCaption(title: string): boolean {
-    if (!title || title === undefined || title == '' || title.length > Resources.Constants.DECK.TITLE_MAX_LENGTH) {
+    if (!title || title === undefined || title == '' || title.length > Constants.DECK.TITLE_MAX_LENGTH) {
       return false;
     }
 
@@ -265,16 +268,8 @@ export class AppPublishEdit {
   }
 
   private validateDescriptionInput() {
-    this.valid = this.validDescription();
-  }
-
-  private validDescription(): boolean {
-    return (
-      !this.description ||
-      this.description === undefined ||
-      this.description === '' ||
-      this.description.length < Resources.Constants.DECK.DESCRIPTION_MAX_LENGTH
-    );
+    this.validDescription =
+      !this.description || this.description === undefined || this.description === '' || this.description.length <= Constants.DECK.DESCRIPTION_MAX_LENGTH;
   }
 
   private onTagInput($event: CustomEvent<KeyboardEvent>): Promise<void> {
@@ -357,31 +352,20 @@ export class AppPublishEdit {
     this.pushToGitHub = $event && $event.detail ? $event.detail.value : true;
   }
 
-  private async navigateContact() {
-    await this.contact.emit();
-
-    navStore.state.nav = {
-      url: '/contact',
-      direction: NavDirection.FORWARD,
-    };
-  }
-
   render() {
     const disable: boolean = this.publishing || this.progress !== undefined;
 
     return (
       <article>
-        <h1>Share your presentation online</h1>
+        <h1>{i18n.state.publish_edit.share}</h1>
 
-        <p>Publish your presentation to share it with the world, your colleagues, friends and community.</p>
+        <p>{i18n.state.publish_edit.publish}</p>
 
-        <p>DeckDeckGo will distribute it online as a modern app.</p>
+        <p>{i18n.state.publish_edit.modern_app}</p>
 
-        <h2 class="ion-padding-top">Meta</h2>
+        <h2 class="ion-padding-top">{i18n.state.publish_edit.meta}</h2>
 
-        <p class="meta-text">
-          Edit or review your presentation's title, summary and add or change tags (up to 5) to make your presentation more inviting to readers.
-        </p>
+        <p class="meta-text">{i18n.state.publish_edit.title_edit}</p>
 
         <form
           onSubmit={(e: Event) => this.handleSubmit(e)}
@@ -397,20 +381,17 @@ export class AppPublishEdit {
                 debounce={500}
                 minlength={3}
                 disabled={disable}
-                maxlength={Resources.Constants.DECK.TITLE_MAX_LENGTH}
+                maxlength={Constants.DECK.TITLE_MAX_LENGTH}
                 required={true}
                 input-mode="text"
                 onIonInput={(e: CustomEvent<KeyboardEvent>) => this.onCaptionInput(e)}
                 onIonChange={() => this.validateCaptionInput()}></ion-input>
             </ion-item>
 
-            <p class={`small ${this.valid ? undefined : 'error'}`}>
-              The title should be provided with latin characters, arabic numerals, spaces and dash. It must not be longer than{' '}
-              {Resources.Constants.DECK.TITLE_MAX_LENGTH} characters.
-            </p>
+            <p class={`small ${this.validTitle ? undefined : 'error'}`}>{i18n.state.publish_edit.title_max_chars}</p>
 
             <ion-item class="item-title">
-              <ion-label>Description</ion-label>
+              <ion-label>{i18n.state.publish_edit.description}</ion-label>
             </ion-item>
 
             <ion-item>
@@ -419,13 +400,13 @@ export class AppPublishEdit {
                 value={this.description}
                 debounce={500}
                 disabled={disable}
-                maxlength={Resources.Constants.DECK.DESCRIPTION_MAX_LENGTH}
+                maxlength={Constants.DECK.DESCRIPTION_MAX_LENGTH}
                 onIonInput={(e: CustomEvent<KeyboardEvent>) => this.onDescriptionInput(e)}
                 onIonChange={() => this.validateDescriptionInput()}></ion-textarea>
             </ion-item>
 
             <ion-item class="item-title ion-margin-top">
-              <ion-label>Tags</ion-label>
+              <ion-label>{i18n.state.publish_edit.tags}</ion-label>
             </ion-item>
 
             <ion-item>
@@ -447,7 +428,7 @@ export class AppPublishEdit {
           <div class="ion-padding ion-text-center publish">{this.renderPublish(disable)}</div>
         </form>
 
-        <p class="small">DeckDeckGo will automatically generate the social card for your presentation based on the first slide of your deck.</p>
+        <p class="small">{i18n.state.publish_edit.social_card}</p>
 
         {this.renderFailure()}
       </article>
@@ -461,17 +442,25 @@ export class AppPublishEdit {
 
     return (
       <p class="small error ion-margin-top">
-        <ion-icon name="warning-outline"></ion-icon> Previous publication attempt failed. You can try again. If the problem persists, please{' '}
-        <a onClick={() => this.navigateContact()}>contact</a> us.
+        <ion-icon name="warning-outline"></ion-icon>{' '}
+        {renderI18n(i18n.state.publish_edit.error_previous, {
+          placeholder: '{0}',
+          value: (
+            <a href="https://deckdeckgo.com/en/contact/" rel="noopener norefferer" target="_blank">
+              {i18n.state.publish_edit.contact}
+            </a>
+          ),
+        })}
       </p>
     );
   }
 
   private renderTitleLabel() {
     return (
-      <ion-item class={`item-title ${this.valid ? undefined : 'error'}`}>
+      <ion-item class={`item-title ${this.validTitle ? undefined : 'error'}`}>
         <ion-label>
-          Title {this.valid ? undefined : <ion-icon aria-label="Title needs to match the expected format" name="warning-outline"></ion-icon>}
+          {i18n.state.publish_edit.title}{' '}
+          {this.validTitle ? undefined : <ion-icon aria-label="Title needs to match the expected format" name="warning-outline"></ion-icon>}
         </ion-label>
       </ion-item>
     );
@@ -480,15 +469,19 @@ export class AppPublishEdit {
   private renderPublish(disable: boolean) {
     if (!disable) {
       return (
-        <ion-button type="submit" disabled={!this.valid || this.disablePublish || !apiUserStore.state.apiUser} color="tertiary" shape="round">
-          <ion-label>Publish now</ion-label>
+        <ion-button
+          type="submit"
+          disabled={!this.validTitle || !this.validDescription || this.disablePublish || !apiUserStore.state.apiUser}
+          color="tertiary"
+          shape="round">
+          <ion-label>{i18n.state.publish_edit.publish_now}</ion-label>
         </ion-button>
       );
     } else {
       return (
         <div class="publishing">
           {this.renderProgressBar()}
-          <ion-label>Hang on, we are publishing your presentation</ion-label>
+          <ion-label>{i18n.state.publish_edit.hang_on_publishing}</ion-label>
         </div>
       );
     }
@@ -516,12 +509,12 @@ export class AppPublishEdit {
         <ion-radio-group value={this.pushToGitHub} onIonChange={($event) => this.onGitHubChange($event)} class="inline">
           <ion-item>
             <ion-radio value={true} mode="md" disabled={disable}></ion-radio>
-            <ion-label>Yes</ion-label>
+            <ion-label>{i18n.state.core.yes}</ion-label>
           </ion-item>
 
           <ion-item>
             <ion-radio value={false} mode="md" disabled={disable}></ion-radio>
-            <ion-label>No</ion-label>
+            <ion-label>{i18n.state.core.no}</ion-label>
           </ion-item>
         </ion-radio-group>
       </ion-list>,
@@ -530,9 +523,9 @@ export class AppPublishEdit {
 
   private renderGitHubText() {
     if (!deckStore.state.deck || !deckStore.state.deck.data || !deckStore.state.deck.data.github) {
-      return <p class="meta-text">Push the source code of the presentation to a new public repository of your GitHub account?</p>;
+      return <p class="meta-text">{i18n.state.publish_edit.source_push}</p>;
     }
 
-    return <p class="meta-text">Submit the source code of the presentation to its GitHub repository?</p>;
+    return <p class="meta-text">{i18n.state.publish_edit.source_submit}</p>;
   }
 }
