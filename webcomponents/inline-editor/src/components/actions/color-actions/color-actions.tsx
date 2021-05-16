@@ -4,7 +4,7 @@ import {DeckdeckgoPalette} from '@deckdeckgo/color';
 
 import {hexToRgb} from '@deckdeckgo/utils';
 
-import {clearTheSelection, getSelection} from '../../../utils/selection.utils';
+import {getSelection} from '../../../utils/selection.utils';
 import {findStyleNode, getAnchorNode} from '../../../utils/node.utils';
 
 import {ExecCommandAction} from '../../../interfaces/interfaces';
@@ -15,9 +15,6 @@ import {ExecCommandAction} from '../../../interfaces/interfaces';
   shadow: true,
 })
 export class ColorActions {
-  @Prop()
-  selection: Selection;
-
   @Prop()
   action: 'color' | 'background-color';
 
@@ -39,13 +36,15 @@ export class ColorActions {
   private range: Range | undefined;
 
   async componentWillLoad() {
-    this.range = this.selection?.getRangeAt(0);
-
     await this.initColor();
   }
 
   private async initColor() {
-    const container: HTMLElement | undefined = getAnchorNode(this.selection);
+    const selection: Selection | undefined = await getSelection();
+
+    this.range = selection?.getRangeAt(0);
+
+    const container: HTMLElement | undefined = getAnchorNode(selection);
 
     if (!container) {
       return;
@@ -63,7 +62,9 @@ export class ColorActions {
   }
 
   private async selectColor($event: CustomEvent) {
-    if (!this.selection || !$event || !$event.detail) {
+    const selection: Selection | undefined = await getSelection();
+
+    if (!selection || !$event || !$event.detail) {
       return;
     }
 
@@ -71,20 +72,19 @@ export class ColorActions {
       return;
     }
 
-    if (!this.selection || this.selection.rangeCount <= 0 || !document) {
-      return;
-    }
-
-    const text: string = this.range.toString();
-
-    if (!text || text.length <= 0) {
-      return;
-    }
-
-    const selection: Selection | undefined = await getSelection();
-    await clearTheSelection();
-
+    selection?.removeAllRanges();
     selection?.addRange(this.range);
+
+    const observer: MutationObserver = new MutationObserver( (_mutations: MutationRecord[]) => {
+      observer.disconnect();
+
+      // No node were added so the style was modified
+      this.range = selection?.getRangeAt(0);
+    });
+
+    const anchorNode: HTMLElement | undefined = getAnchorNode(selection);
+
+    observer.observe(anchorNode, {childList: true});
 
     this.execCommand.emit({
       cmd: 'style',

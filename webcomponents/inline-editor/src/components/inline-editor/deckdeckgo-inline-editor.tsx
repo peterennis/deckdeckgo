@@ -1,4 +1,4 @@
-import {Component, Element, Event, EventEmitter, h, Host, Listen, Method, Prop, State, Watch} from '@stencil/core';
+import {Component, Element, Event, EventEmitter, Fragment, h, Host, Method, Prop, State, Watch} from '@stencil/core';
 
 import {debounce, isIOS, isMobile, isRTL, unifyEvent} from '@deckdeckgo/utils';
 
@@ -12,6 +12,8 @@ import {AnchorLink, ExecCommandAction, InlineAction} from '../../interfaces/inte
 import {DeckdeckgoInlineEditorUtils} from '../../utils/utils';
 import {execCommand} from '../../utils/execcommand.utils';
 import {clearTheSelection, getSelection} from '../../utils/selection.utils';
+import {getAnchorNode} from '../../utils/node.utils';
+import {execCommandNative} from '../../utils/execcommnad-native.utils';
 
 /**
  * @slot - related to the customActions propery
@@ -82,7 +84,7 @@ export class DeckdeckgoInlineEditor {
   private selection: Selection = null;
 
   private anchorLink: AnchorLink = null;
-  private anchorEvent: MouseEvent | TouchEvent;
+  private anchorEvent: MouseEvent | TouchEvent | undefined;
 
   @State()
   private link: boolean = false;
@@ -179,6 +181,18 @@ export class DeckdeckgoInlineEditor {
   customActions: string; // Comma separated list of additional action components
 
   /**
+   * Handle the selection change "manually". See chapter "Usage within shadow dom"
+   */
+  @Prop()
+  handleGlobalEvents: boolean = true;
+
+  /**
+   * Use `document.execCommand` (= "native") to modify the document or, alternatively use the `custom` implementation
+   */
+  @Prop()
+  command: 'native' | 'custom' = 'native';
+
+  /**
    * Triggered when a custom action is selected. Its detail provide an action name, the Selection and an anchorLink
    */
   @Event()
@@ -199,6 +213,7 @@ export class DeckdeckgoInlineEditor {
 
   constructor() {
     this.resetDisplayToolsActivated();
+    this.handleSelectionChange = this.handleSelectionChange.bind(this);
   }
 
   private resetDisplayToolsActivated() {
@@ -208,9 +223,12 @@ export class DeckdeckgoInlineEditor {
   }
 
   async componentWillLoad() {
-    await this.attachListener();
-
     await this.initDefaultContentAlign();
+  }
+
+  async connectedCallback() {
+    this.attachSelectionChangeHandler();
+    await this.attachListener();
   }
 
   async componentDidLoad() {
@@ -220,7 +238,17 @@ export class DeckdeckgoInlineEditor {
   }
 
   async disconnectedCallback() {
+    this.detachSelectionChangeHandler();
     await this.detachListener(this.attachTo ? this.attachTo : document);
+  }
+
+  @Watch('handleGlobalEvents')
+  watchHandleGlobalEvents(changedValue: boolean) {
+    if (changedValue) {
+      this.attachSelectionChangeHandler();
+    } else {
+      this.detachSelectionChangeHandler();
+    }
   }
 
   @Watch('attachTo')
@@ -233,6 +261,18 @@ export class DeckdeckgoInlineEditor {
     await this.attachListener();
   }
 
+  private attachSelectionChangeHandler() {
+    if (!this.handleGlobalEvents) return;
+    document.addEventListener('selectionchange', this.handleSelectionChange, {
+      passive: true,
+    });
+  }
+
+  private detachSelectionChangeHandler() {
+    if (this.handleGlobalEvents) return;
+    document.removeEventListener('selectionchange', this.handleSelectionChange);
+  }
+
   private attachListener(): Promise<void> {
     return new Promise<void>((resolve) => {
       const listenerElement: HTMLElement | Document = this.attachTo ? this.attachTo : document;
@@ -240,7 +280,6 @@ export class DeckdeckgoInlineEditor {
         listenerElement.addEventListener('mousedown', this.startSelection, {passive: true});
         listenerElement.addEventListener('touchstart', this.startSelection, {passive: true});
       }
-
       resolve();
     });
   }
@@ -257,7 +296,15 @@ export class DeckdeckgoInlineEditor {
   }
 
   private startSelection = async ($event: MouseEvent | TouchEvent) => {
-    if (this.displayToolsActivated) {
+    const action: boolean = $event.composedPath().includes(this.el);
+
+    if (action) {
+      return;
+    }
+
+    if (this.displayToolsActivated && !action) {
+      // If use in a shadowed attachTo context, onSelectionChange might not be triggered
+      await this.reset(true);
       return;
     }
 
@@ -340,8 +387,11 @@ export class DeckdeckgoInlineEditor {
     return DeckdeckgoInlineEditorUtils.isAnchorImage(this.anchorEvent, this.imgAnchor);
   }
 
-  @Listen('selectionchange', {target: 'document', passive: true})
-  async selectionchange(_$event: UIEvent) {
+  private async handleSelectionChange(_$event: UIEvent) {
+    if (this.toolbarActions === ToolbarActions.COLOR || this.toolbarActions === ToolbarActions.BACKGROUND_COLOR) {
+      return;
+    }
+
     if (document && document.activeElement && !this.isContainer(document.activeElement)) {
       if (document.activeElement.nodeName.toLowerCase() !== 'deckgo-inline-editor') {
         await this.reset(false);
@@ -359,9 +409,12 @@ export class DeckdeckgoInlineEditor {
     await this.displayTools();
   }
 
-  private displayTools(): Promise<void> {
+  @Method()
+  public displayTools(selection?: Selection): Promise<void> {
     return new Promise<void>(async (resolve) => {
-      const selection: Selection | undefined = await getSelection();
+      if (!selection) {
+        selection = await getSelection();
+      }
 
       if (!this.anchorEvent) {
         await this.reset(false);
@@ -452,23 +505,6 @@ export class DeckdeckgoInlineEditor {
       }
 
       await this.setStickyPositionIOS();
-
-      if (window) {
-        window.addEventListener(
-          'scroll',
-          async () => {
-            await this.setStickyPositionIOS();
-          },
-          {passive: true}
-        );
-        window.addEventListener(
-          'resize',
-          async () => {
-            await this.reset(true, true);
-          },
-          {passive: true}
-        );
-      }
     });
   }
 
@@ -515,28 +551,30 @@ export class DeckdeckgoInlineEditor {
         return;
       }
 
-      const content: Node = selection.anchorNode;
+      const content: Node = getAnchorNode(selection);
 
       if (!content) {
         resolve();
         return;
       }
 
-      if (this.isContainer(content) || content.parentElement) {
-        this.bold = undefined;
-        this.italic = undefined;
-        this.underline = undefined;
-        this.strikethrough = undefined;
-        this.contentList = undefined;
-        this.contentFontSize = undefined;
-
-        await this.initDefaultContentAlign();
-
-        await this.findStyle(this.isContainer(content) ? content : content.parentElement);
-      }
+      await this.initStyleForNode(content);
 
       resolve();
     });
+  }
+
+  private async initStyleForNode(node: Node) {
+    this.bold = undefined;
+    this.italic = undefined;
+    this.underline = undefined;
+    this.strikethrough = undefined;
+    this.contentList = undefined;
+    this.contentFontSize = undefined;
+
+    await this.initDefaultContentAlign();
+
+    await this.findStyle(node);
   }
 
   private async initDefaultContentAlign() {
@@ -771,13 +809,41 @@ export class DeckdeckgoInlineEditor {
       return;
     }
 
-    await execCommand(this.selection, $event.detail, this.containers);
+    // onSelectionChange is triggered if DOM changes, we still need to detect attributes changes to refresh style
+    this.onAttributesChangesInitStyle();
 
-    const container: HTMLElement = await DeckdeckgoInlineEditorUtils.findContainer(
+    if (this.command === 'native') {
+      execCommandNative($event.detail);
+    } else {
+      await execCommand(this.selection, $event.detail, this.containers);
+    }
+
+    if ($event.detail.cmd === 'list' || isIOS()) {
+      await this.reset(true);
+    }
+
+    const container: HTMLElement | undefined = await DeckdeckgoInlineEditorUtils.findContainer(
       this.containers,
       !this.selection ? document.activeElement : this.selection.anchorNode
     );
+
+    if (!container) {
+      return;
+    }
+
     this.styleDidChange.emit(container);
+  }
+
+  private onAttributesChangesInitStyle() {
+    const anchorNode: HTMLElement | undefined = getAnchorNode(this.selection);
+
+    const observer: MutationObserver = new MutationObserver(async () => {
+      observer.disconnect();
+
+      await this.initStyleForNode(anchorNode);
+    });
+
+    observer.observe(anchorNode, {attributes: true});
   }
 
   render() {
@@ -813,7 +879,6 @@ export class DeckdeckgoInlineEditor {
         <deckgo-ie-link-actions
           toolbarActions={this.toolbarActions}
           anchorLink={this.anchorLink}
-          selection={this.selection}
           linkCreated={this.linkCreated}
           containers={this.containers}
           mobile={this.mobile}
@@ -822,7 +887,6 @@ export class DeckdeckgoInlineEditor {
     } else if (this.toolbarActions === ToolbarActions.COLOR || this.toolbarActions === ToolbarActions.BACKGROUND_COLOR) {
       return (
         <deckgo-ie-color-actions
-          selection={this.selection}
           action={this.toolbarActions === ToolbarActions.BACKGROUND_COLOR ? 'background-color' : 'color'}
           palette={this.palette}
           mobile={this.mobile}
@@ -849,12 +913,12 @@ export class DeckdeckgoInlineEditor {
           mobile={this.mobile}
           sticky={sticky}
           contentAlign={this.contentAlign}
+          command={this.command}
           onAlignModified={() => this.reset(true)}></deckgo-ie-align-actions>
       );
     } else if (this.toolbarActions === ToolbarActions.LIST) {
       return (
         <deckgo-ie-list-actions
-          selection={this.selection}
           disabledTitle={this.disabledTitle}
           mobile={this.mobile}
           sticky={sticky}
@@ -879,7 +943,6 @@ export class DeckdeckgoInlineEditor {
       <deckgo-ie-style-actions
         mobile={this.mobile}
         disabledTitle={this.disabledTitle}
-        selection={this.selection}
         bold={this.bold === 'bold'}
         italic={this.italic === 'italic'}
         underline={this.underline === 'underline'}
@@ -889,8 +952,6 @@ export class DeckdeckgoInlineEditor {
       this.renderSeparator(),
 
       this.renderFontSizeAction(),
-
-      this.renderSeparator(),
 
       this.renderColorActions(),
 
@@ -986,11 +1047,15 @@ export class DeckdeckgoInlineEditor {
     }
 
     return (
-      <deckgo-ie-action-button mobile={this.mobile} onAction={() => this.openFontSizeActions()}>
-        <span>
-          A<small>A</small>
-        </span>
-      </deckgo-ie-action-button>
+      <Fragment>
+        <deckgo-ie-action-button mobile={this.mobile} onAction={() => this.openFontSizeActions()}>
+          <span>
+            A<small>A</small>
+          </span>
+        </deckgo-ie-action-button>
+
+        {this.renderSeparator()}
+      </Fragment>
     );
   }
 }

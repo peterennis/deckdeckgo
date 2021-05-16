@@ -1,8 +1,67 @@
-# 3.2.0 (2021-05-05)
+# 4.0.3 (2021-05-15)
+
+### Fix
+
+- do not display separator if font-size option not activated
+
+# 4.0.2 (2021-05-09)
+
+### Fix
+
+- do not loose range selection focus on color input
+
+# 4.0.1 (2021-05-09)
+
+### Features
+
+- re-introduce the usage of `execCommand`
+- optionally fallback on the custom DOM manipulation option with property `command` 
+
+# 3.4.1 (2021-05-09)
+
+### Fix
+
+- color events
+
+# 3.4.0 (2021-05-09)
+
+### Features
+
+- new property `handleGlobalEvents` to scope events
+
+### Fix
+
+- iOS selection
+- mobile overflow for color picker
+
+### Style
+
+- color picker width when toolbar sticky
+
+### Chore
+
+- remove `console.log`
+
+# 3.3.0 (2021-05-08)
+
+### Fix
+
+- close inline editor in a shadowed context
+- init style after changes if "only" attributes are modified
+
+### Build
+
+- bump dependencies
+
+# 3.2.0 (2021-05-07)
 
 ### Features
 
 - preserve selection after applying style aka do not close inline editor
+
+### Fix
+
+- list manipulation
 
 # 3.1.0 (2021-05-02)
 

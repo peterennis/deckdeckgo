@@ -8,6 +8,8 @@
 
 :host(.deckgo-tools-mobile) {
   max-width: calc(100% - 54px);
-  --deckgo-overflow: scroll;
-  --deckgo-flex-wrap: nowrap;
+  --deckgo-color-flex-wrap: nowrap;
+  --deckgo-color-width: fit-content;
+  pointer-events: all;
+  overflow: scroll;
 }

@@ -118,8 +118,8 @@ export class AppEditor {
   private contentRef!: HTMLElement;
   private mainRef!: HTMLElement;
 
-  private mainResizeObserver: ResizeObserverConstructor;
-  private slideResizeObserver: ResizeObserverConstructor;
+  private mainResizeObserver: ResizeObserver;
+  private slideResizeObserver: ResizeObserver;
 
   constructor() {
     this.authService = AuthService.getInstance();
@@ -244,22 +244,18 @@ export class AppEditor {
     }
   }
 
-  private updateInlineEditorListener(): Promise<void> {
-    return new Promise<void>(async (resolve) => {
-      if (!this.deckRef) {
-        return;
-      }
+  private async updateInlineEditorListener(): Promise<void> {
+    if (!this.deckRef) {
+      return;
+    }
 
-      const inlineEditor: HTMLElement = this.el.querySelector('deckgo-inline-editor');
+    const inlineEditor: HTMLDeckgoInlineEditorElement = this.el.querySelector('deckgo-inline-editor');
 
-      if (!inlineEditor) {
-        return;
-      }
+    if (!inlineEditor) {
+      return;
+    }
 
-      (inlineEditor as any).attachTo = this.deckRef;
-
-      resolve();
-    });
+    inlineEditor.attachTo = this.deckRef;
   }
 
   private initSlide(): Promise<void> {
@@ -809,7 +805,7 @@ export class AppEditor {
         img-anchor="deckgo-lazy-img"
         list={false}
         palette={colorStore.state.history}
-        align={false}></deckgo-inline-editor>
+        align={false} fontSize={false}></deckgo-inline-editor>
     );
   }
 

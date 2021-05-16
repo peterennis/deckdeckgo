@@ -1,3 +1,15 @@
+# 4.0.2 (2021-05-13)
+
+### Style
+
+- container input style `border` and `border-radius` exposed
+
+# 4.0.1 (2021-05-13)
+
+### Style
+
+- missing exposed `background` and `font-family` for the color input
+
 # 4.0.0 (2021-05-01)
 
 ### Breaking
